@@ -1004,7 +1004,7 @@ defmodule Firecracker do
   @spec start(t()) :: t()
   def start(%Firecracker{state: :initial, id: id, config_file: config_file} = vm) do
     %{binary: binary, args: args, api_sock: sock, config: config} = Firecracker.dry_run(vm)
-  
+
     {args, config_file} =
       if is_nil(sock) and is_nil(config_file) do
         path = Path.join([System.tmp_dir(), "#{id}.config.json"])
@@ -1185,7 +1185,7 @@ defmodule Firecracker do
         {:error, :already_exited} -> p
       end
 
-    cleanup_files!(vm)
+    cleanup_files(vm)
     %{vm | process: p, state: :exited}
   end
 
@@ -1195,7 +1195,7 @@ defmodule Firecracker do
     raise ArgumentError, "unable to stop VM which is already in state #{inspect(state)}"
   end
 
-  defp cleanup_files!(%Firecracker{} = vm) do
+  defp cleanup_files(%Firecracker{} = vm) do
     %{
       config_file: config,
       api_sock: api_sock,
@@ -1208,15 +1208,15 @@ defmodule Firecracker do
     if config, do: File.rm_rf!(config)
 
     with %{uds_path: path} when is_binary(path) <- vsock do
-      File.rm_rf!(path)
+      File.rm_rf(path)
     end
 
     with %{metrics_path: path} when is_binary(path) <- metrics do
-      File.rm_rf!(path)
+      File.rm_rf(path)
     end
 
     with %{output_path: path} when is_binary(path) <- serial do
-      File.rm_rf!(path)
+      File.rm_rf(path)
     end
   end
 
