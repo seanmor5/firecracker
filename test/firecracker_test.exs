@@ -1789,6 +1789,7 @@ defmodule FirecrackerTest do
              } = config
     end
 
+    @tag tap: "tap0", feature: [:pmem, :serial]
     test "returns complete configuration with all resource types" do
       rate_limiter =
         Firecracker.RateLimiter.new()
@@ -2376,6 +2377,7 @@ defmodule FirecrackerTest do
       assert %{"entropy" => %{"rate_limiter" => _}} = config
     end
 
+    @tag feature: :serial
     test "starts a vm with serial device" do
       vm =
         Firecracker.new()
@@ -2773,7 +2775,7 @@ defmodule FirecrackerTest do
         Firecracker.new()
         |> Firecracker.set_option(:firecracker_path, "/nonexistent/firecracker")
 
-      assert_raise ArgumentError, fn ->
+      assert_raise RuntimeError, fn ->
         Firecracker.start(vm)
       end
     end
@@ -2807,7 +2809,7 @@ defmodule FirecrackerTest do
       end
     end
 
-    @tag [tap: "tap0", feature: :pmem]
+    @tag [tap: "tap0", feature: [:pmem, :serial]]
     test "starts VM with all device types combined" do
       rootfs = FirecrackerHelpers.fetch_rootfs!()
       pmem_file = TempFiles.write!("pmem-all", ".img", :binary.copy(<<0>>, 1024 * 1024))
@@ -2943,6 +2945,7 @@ defmodule FirecrackerTest do
       refute File.exists?(metrics_path)
     end
 
+    @tag feature: :serial
     test "serial output cleanup on stop after start" do
       serial_path = TempFiles.touch!("serial-cleanup", ".log")
 
@@ -3151,6 +3154,7 @@ defmodule FirecrackerTest do
       assert %{"test_key" => "test_value"} = metadata
     end
 
+    @tag feature: :serial
     test "applies serial configuration before boot", %{vm: vm} do
       updated_vm =
         vm
@@ -3227,7 +3231,7 @@ defmodule FirecrackerTest do
       assert updated_vm.pmems["pmem1"].applied? == true
     end
 
-    @tag [tap: "tap0", feature: :pmem]
+    @tag [tap: "tap0", feature: [:pmem, :serial]]
     test "applies all resource types together in one apply call", %{
       vm: vm,
       kernel: kernel,
@@ -3986,7 +3990,7 @@ defmodule FirecrackerTest do
     @describetag :vm
 
     setup context do
-      with :ok <- TestRequirements.context(context) do
+      with :ok <- TestRequirements.check(context) do
         kernel = FirecrackerHelpers.fetch_kernel!()
         rootfs = FirecrackerHelpers.fetch_rootfs!()
 

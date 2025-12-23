@@ -76,6 +76,7 @@ end
 
 defmodule TestRequirements do
   @feature_versions %{
+    serial: "1.13.0",
     pmem: "1.14.0"
   }
 
