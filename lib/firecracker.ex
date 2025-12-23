@@ -1041,7 +1041,7 @@ defmodule Firecracker do
       {:error, reason} ->
         if Px.alive?(p) do
           p
-          |> Px.signal(:sigterm)
+          |> Px.signal!(:sigterm)
           |> Px.wait()
         end
 
@@ -1179,7 +1179,7 @@ defmodule Firecracker do
   @spec stop(t()) :: t()
   def stop(%Firecracker{process: %Px{} = p, state: state} = vm)
       when state in [:started, :running, :paused] do
-    p = Px.wait(Px.signal(p, :sigterm))
+    p = Px.wait(Px.signal!(p, :sigterm))
     cleanup_files!(vm)
     %{vm | process: p, state: :exited}
   end
