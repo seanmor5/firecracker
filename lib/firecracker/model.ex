@@ -64,15 +64,15 @@ defimpl Firecracker.Model, for: Any do
         def patch(struct) do
           struct
           |> Map.from_struct()
-          |> Map.new(fn {k, v} ->
-            if MapSet.member?(@post_boot_keys, k) do
+          |> Map.new(fn
+            {k, v} when k in @post_boot_keys ->
               case v do
                 %Firecracker.RateLimiter{} = rl -> {k, Firecracker.RateLimiter.model(rl)}
                 _ -> {k, v}
               end
-            else
+
+            {k, _v} ->
               {k, nil}
-            end
           end)
           |> to_api_config()
         end
@@ -92,7 +92,7 @@ defimpl Firecracker.Model, for: Any do
 
         defp to_api_config(config) do
           config
-          |> Map.drop([:applied?])
+          |> Enum.reject(&is_nil(elem(&1, 1)))
           |> Map.new(fn {k, v} -> {Atom.to_string(k), v} end)
         end
       end
