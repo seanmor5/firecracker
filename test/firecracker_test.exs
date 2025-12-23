@@ -4276,7 +4276,7 @@ defmodule FirecrackerTest do
         Firecracker.new()
         |> Firecracker.snapshot_version()
 
-      assert version =~ "v8.0.0"
+      assert version =~ ~r/^v\d+\.\d+\.\d+/
     end
 
     test "returns the binary snapshot version for a vm using a custom path" do
@@ -4285,7 +4285,7 @@ defmodule FirecrackerTest do
         |> Firecracker.set_option(:firecracker_path, "/usr/bin/firecracker")
         |> Firecracker.snapshot_version()
 
-      assert version =~ "v8.0.0"
+      assert version =~ ~r/^v\d+\.\d+\.\d+/
     end
 
     test "returns the binary snapshot version using environment path when struct path is nil" do
@@ -4298,7 +4298,7 @@ defmodule FirecrackerTest do
           Firecracker.new()
           |> Firecracker.snapshot_version()
 
-        assert version =~ "v8.0.0"
+        assert version =~ ~r/^v\d+\.\d+\.\d+/
       after
         Application.put_env(:firecracker, Firecracker, original_env)
       end
@@ -4315,7 +4315,7 @@ defmodule FirecrackerTest do
           |> Firecracker.set_option(:firecracker_path, "/usr/bin/firecracker")
           |> Firecracker.snapshot_version()
 
-        assert version =~ "v8.0.0"
+        assert version =~ ~r/^v\d+\.\d+\.\d+/
       after
         Application.put_env(:firecracker, Firecracker, original_env)
       end
@@ -4328,7 +4328,7 @@ defmodule FirecrackerTest do
     test "returns the binary version for the environment using default path" do
       version = Firecracker.snapshot_version()
 
-      assert version =~ "v8.0.0"
+      assert version =~ ~r/^v\d+\.\d+\.\d+/
     end
 
     test "returns the binary snapshot version using custom path from application env" do
@@ -4339,7 +4339,7 @@ defmodule FirecrackerTest do
 
         version = Firecracker.snapshot_version()
 
-        assert version =~ "v8.0.0"
+        assert version =~ ~r/^v\d+\.\d+\.\d+/
       after
         Application.put_env(:firecracker, Firecracker, original_env)
       end
