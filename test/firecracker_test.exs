@@ -2394,6 +2394,7 @@ defmodule FirecrackerTest do
       assert File.exists?(sock)
     end
 
+    @tag feature: :pmem
     test "starts a vm with pmem device" do
       pmem_file = TempFiles.write!("pmem", ".img", :binary.copy(<<0>>, 1024 * 1024))
 
@@ -2412,6 +2413,7 @@ defmodule FirecrackerTest do
       assert %{"pmems" => [%{"id" => "pmem0"}]} = Firecracker.describe(vm, :vm_config)
     end
 
+    @tag feature: :pmem
     test "starts a vm with multiple pmem devices" do
       pmem_file1 = TempFiles.write!("pmem1", ".img", :binary.copy(<<0>>, 1024 * 1024))
       pmem_file2 = TempFiles.write!("pmem2", ".img", :binary.copy(<<0>>, 1024 * 1024))
@@ -2809,7 +2811,7 @@ defmodule FirecrackerTest do
       end
     end
 
-    @tag tap: "tap0"
+    @tag [tap: "tap0", feature: :pmem]
     test "starts VM with all device types combined" do
       rootfs = FirecrackerHelpers.fetch_rootfs!()
       pmem_file = TempFiles.write!("pmem-all", ".img", :binary.copy(<<0>>, 1024 * 1024))
@@ -3214,6 +3216,7 @@ defmodule FirecrackerTest do
       assert updated_vm.network_interfaces["eth1"].applied? == true
     end
 
+    @tag feature: :pmem
     test "applies multiple pmem devices in one apply call", %{vm: vm} do
       updated_vm =
         vm
@@ -3226,7 +3229,7 @@ defmodule FirecrackerTest do
       assert updated_vm.pmems["pmem1"].applied? == true
     end
 
-    @tag tap: "tap0"
+    @tag [tap: "tap0", feature: :pmem]
     test "applies all resource types together in one apply call", %{
       vm: vm,
       kernel: kernel,
