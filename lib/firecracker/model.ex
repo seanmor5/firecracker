@@ -92,7 +92,6 @@ defimpl Firecracker.Model, for: Any do
 
         defp to_api_config(config) do
           config
-          |> Enum.reject(&is_nil(elem(&1, 1)))
           |> Map.new(fn {k, v} -> {Atom.to_string(k), v} end)
         end
       end
