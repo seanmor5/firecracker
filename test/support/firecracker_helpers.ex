@@ -91,7 +91,7 @@ defmodule TapDevice do
         "tap device '#{tap}' not found. Create with: sudo ip tuntap add dev #{tap} mode tap && sudo ip link set #{tap} up"
       )
 
-      {:ok, skip: true}
+      [skip: true]
     end
   end
 
@@ -107,7 +107,7 @@ defmodule TapDevice do
         end)
 
       IO.warn("tap device(s) #{inspect(missing)} not found. Create with: #{cmds}")
-      {:skip, "tap device(s) #{inspect(missing)} not available"}
+      [skip: true]
     end
   end
 
