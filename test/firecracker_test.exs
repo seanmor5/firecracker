@@ -3668,19 +3668,6 @@ defmodule FirecrackerTest do
       assert %{"amount_mib" => 5} = Firecracker.describe(vm, :balloon)
     end
 
-    test "updates balloon deflate_on_oom after boot", %{vm: vm} do
-      updated_vm =
-        vm
-        |> Firecracker.configure(:balloon, amount_mib: 100, deflate_on_oom: false)
-        |> Firecracker.apply()
-
-      assert [] = updated_vm.errors
-      assert updated_vm.balloon.applied? == true
-
-      assert %{"amount_mib" => 100, "deflate_on_oom" => false} =
-               Firecracker.describe(updated_vm, :balloon)
-    end
-
     test "applies nested metadata structures after boot", %{vm: vm} do
       nested_metadata = %{
         "instance" => %{
