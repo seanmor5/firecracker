@@ -1,4 +1,8 @@
 defmodule TempFiles do
+  @doc """
+  Helper for working with TempFiles in tests.
+  """
+
   use GenServer
 
   def start_link(_opts \\ []) do
@@ -68,6 +72,46 @@ defmodule TempFiles do
     {_, 0} = System.cmd("mkfifo", [path])
     path
   end
+end
+
+defmodule TapDevice do
+  @moduledoc """
+  Helpers for working with tap devices in tests.
+  """
+
+  def exists?(name) do
+    File.exists?("/sys/class/net/#{name}")
+  end
+
+  def require_tap(%{tap: tap}) when is_binary(tap) do
+    if exists?(tap) do
+      :ok
+    else
+      IO.warn(
+        "tap device '#{tap}' not found. Create with: sudo ip tuntap add dev #{tap} mode tap && sudo ip link set #{tap} up"
+      )
+
+      {:skip, "tap device '#{tap}' not available"}
+    end
+  end
+
+  def require_tap(%{tap: taps}) when is_list(taps) do
+    missing = Enum.reject(taps, &exists?/1)
+
+    if missing == [] do
+      :ok
+    else
+      cmds =
+        Enum.map_join(missing, " && ", fn tap ->
+          "sudo ip tuntap add dev #{tap} mode tap && sudo ip link set #{tap} up"
+        end)
+
+      IO.warn("tap device(s) #{inspect(missing)} not found. Create with: #{cmds}")
+      {:skip, "tap device(s) #{inspect(missing)} not available"}
+    end
+  end
+
+  def require_tap(_context), do: :ok
 end
 
 defmodule FirecrackerHelpers do

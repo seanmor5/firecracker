@@ -7,6 +7,10 @@ defmodule FirecrackerTest do
     :ok
   end
 
+  setup context do
+    TapDevice.require_tap(context)
+  end
+
   describe "new/1" do
     test "creates a new %Firecracker{} struct with default values" do
       assert %Firecracker{} = Firecracker.new()
@@ -2135,6 +2139,7 @@ defmodule FirecrackerTest do
       assert %{"drives" => [%{"drive_id" => "rootfs"}]} = Firecracker.describe(vm, :vm_config)
     end
 
+    @tag tap: "tap0"
     test "starts a vm with a network interface" do
       vm =
         Firecracker.new()
@@ -2478,6 +2483,7 @@ defmodule FirecrackerTest do
       assert Enum.any?(drives, &(&1["drive_id"] == "data"))
     end
 
+    @tag tap: ["tap0", "tap1"]
     test "starts a vm with multiple network interfaces" do
       vm =
         Firecracker.new()
