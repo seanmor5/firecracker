@@ -92,7 +92,7 @@ defmodule TestRequirements do
     else
       msg = "tap device '#{tap}' not found. Create with: sudo ip tuntap add dev #{tap} mode tap && sudo ip link set #{tap} up"
       IO.warn(msg)
-      {:skip, msg}
+      {:ok, skip: msg}
     end
   end
 
@@ -109,7 +109,7 @@ defmodule TestRequirements do
 
       msg = "tap device(s) #{inspect(missing)} not found. Create with: #{cmds}"
       IO.warn(msg)
-      {:skip, msg}
+      {:ok, skip: msg}
     end
   end
 
@@ -127,7 +127,7 @@ defmodule TestRequirements do
       required = @feature_versions[feature]
       msg = "feature '#{feature}' requires Firecracker >= #{required}, but #{installed} is installed"
       IO.warn(msg)
-      {:skip, msg}
+      {:ok, skip: msg}
     end
   end
 
@@ -146,7 +146,7 @@ defmodule TestRequirements do
 
       msg = "features #{missing} not supported by Firecracker #{installed}"
       IO.warn(msg)
-      {:skip, msg}
+      {:ok, skip: msg}
     end
   end
 
