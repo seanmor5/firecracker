@@ -1,7 +1,7 @@
 defmodule FirecrackerTest do
   use ExUnit.Case, async: false
 
-  setup context do
+  setup do
     pid = self()
     on_exit(fn -> TempFiles.cleanup(pid) end)
     :ok
@@ -4022,7 +4022,7 @@ defmodule FirecrackerTest do
     @describetag :vm
 
     setup context do
-      with :context <- TestRequirements.check(context) do
+      with :ok <- TestRequirements.check(context) do
         kernel = FirecrackerHelpers.fetch_kernel!()
         rootfs = FirecrackerHelpers.fetch_rootfs!()
 
