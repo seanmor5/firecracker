@@ -1,13 +1,9 @@
 defmodule FirecrackerTest do
   use ExUnit.Case, async: false
 
-  setup do
+  setup context do
     pid = self()
     on_exit(fn -> TempFiles.cleanup(pid) end)
-    :ok
-  end
-
-  setup context do
     TestRequirements.check(context)
   end
 
@@ -2985,7 +2981,9 @@ defmodule FirecrackerTest do
   describe "apply/1 pre-boot" do
     @describetag :vm
 
-    setup do
+    setup context do
+      IO.inspect context
+
       vm = Firecracker.new() |> Firecracker.start()
 
       on_exit(fn -> Firecracker.stop(vm) end)
