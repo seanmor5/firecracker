@@ -1,4 +1,10 @@
 defmodule TempFiles do
+  use GenServer
+
+  def start_link(_opts \\ []) do
+    GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
+  end
+
   def path(prefix, suffix \\ "") do
     path =
       Path.join([System.tmp_dir(), "#{prefix}-#{System.unique_integer([:positive])}#{suffix}"])
@@ -7,17 +13,36 @@ defmodule TempFiles do
     path
   end
 
-  def register(path) do
-    paths = Process.get(:temp_files, [])
-    Process.put(:temp_files, [path | paths])
+  def register(path, pid \\ self()) do
+    GenServer.call(__MODULE__, {:register, pid, path})
     path
   end
 
-  def cleanup do
-    paths = Process.get(:temp_files, [])
+  def cleanup(pid \\ self()) do
+    paths = GenServer.call(__MODULE__, {:cleanup, pid})
     Enum.each(paths, &File.rm_rf/1)
-    Process.delete(:temp_files)
     :ok
+  end
+
+  @impl true
+  def init(state), do: {:ok, state}
+
+  @impl true
+  def handle_call({:register, pid, path}, _from, state) do
+    {:reply, :ok, Map.update(state, pid, [path], &[path | &1])}
+  end
+
+  def handle_call({:cleanup, pid}, _from, state) do
+    {paths, state} = Map.pop(state, pid, [])
+    {:reply, paths, state}
+  end
+
+  @impl true
+  def terminate(_reason, state) do
+    state
+    |> Map.values()
+    |> List.flatten()
+    |> Enum.each(&File.rm_rf/1)
   end
 
   def write!(prefix, suffix, content) do

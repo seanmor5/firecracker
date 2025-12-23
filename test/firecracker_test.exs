@@ -2,7 +2,8 @@ defmodule FirecrackerTest do
   use ExUnit.Case, async: false
 
   setup do
-    on_exit(fn -> TempFiles.cleanup() end)
+    pid = self()
+    on_exit(fn -> TempFiles.cleanup(pid) end)
     :ok
   end
 
@@ -2611,10 +2612,7 @@ defmodule FirecrackerTest do
         |> Firecracker.configure(:machine_config, vcpu_count: 3, mem_size_mib: 256)
         |> Firecracker.start()
 
-      on_exit(fn ->
-        if vm.config_file, do: TempFiles.register(vm.config_file)
-        Firecracker.stop(vm)
-      end)
+      on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{
                api_sock: nil,
