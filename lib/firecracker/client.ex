@@ -37,7 +37,7 @@ defmodule Firecracker.Client do
         %Firecracker.Balloon{stats_polling_interval_s: interval, amount_mib: amount} = balloon
       )
       when not is_nil(interval) and not is_nil(amount) do
-    stats_req = %{stats_polling_interval_s: interval}
+    stats_req = %{amount_mib: amount, stats_polling_interval_s: interval}
 
     resp =
       req
@@ -54,7 +54,7 @@ defmodule Firecracker.Client do
   def patch(req, %Firecracker.Balloon{stats_polling_interval_s: interval})
       when not is_nil(interval) do
     req
-    |> Req.put!(url: "/balloon/statistics", json: %{stats_polling_interval_s: interval})
+    |> Req.put!(url: "/balloon/statistics", json: %{amount_mib: nil, stats_polling_interval_s: interval})
     |> parse_resp(204)
   end
 
