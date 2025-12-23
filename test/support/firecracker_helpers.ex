@@ -1,6 +1,8 @@
 defmodule TempFiles do
   def path(prefix, suffix \\ "") do
-    path = "/tmp/#{prefix}-#{System.unique_integer([:positive])}#{suffix}"
+    path =
+      Path.join([System.tmp_dir(), "#{prefix}-#{System.unique_integer([:positive])}#{suffix}"])
+
     register(path)
     path
   end
