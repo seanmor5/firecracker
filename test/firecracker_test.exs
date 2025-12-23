@@ -4,7 +4,7 @@ defmodule FirecrackerTest do
   setup context do
     pid = self()
     on_exit(fn -> TempFiles.cleanup(pid) end)
-    TestRequirements.check(context)
+    :ok
   end
 
   describe "new/1" do
@@ -2982,16 +2982,16 @@ defmodule FirecrackerTest do
     @describetag :vm
 
     setup context do
-      IO.inspect context
+      with :ok <- TestRequirements.check(context) do
+        vm = Firecracker.new() |> Firecracker.start()
 
-      vm = Firecracker.new() |> Firecracker.start()
+        on_exit(fn -> Firecracker.stop(vm) end)
 
-      on_exit(fn -> Firecracker.stop(vm) end)
+        kernel = FirecrackerHelpers.fetch_kernel!()
+        rootfs = FirecrackerHelpers.fetch_rootfs!()
 
-      kernel = FirecrackerHelpers.fetch_kernel!()
-      rootfs = FirecrackerHelpers.fetch_rootfs!()
-
-      [vm: vm, kernel: kernel, rootfs: rootfs]
+        [vm: vm, kernel: kernel, rootfs: rootfs]
+      end
     end
 
     test "applies drive configuration before boot", %{vm: vm, rootfs: rootfs} do
@@ -3468,25 +3468,27 @@ defmodule FirecrackerTest do
   describe "apply/1 post-boot" do
     @describetag :vm
 
-    setup do
-      kernel = FirecrackerHelpers.fetch_kernel!()
-      rootfs = FirecrackerHelpers.fetch_rootfs!()
+    setup context do
+      with :ok <- TestRequirements.check(context) do
+        kernel = FirecrackerHelpers.fetch_kernel!()
+        rootfs = FirecrackerHelpers.fetch_rootfs!()
 
-      vm =
-        Firecracker.new()
-        |> Firecracker.configure(:boot_source, kernel_image_path: kernel)
-        |> Firecracker.add(:drive, "rootfs",
-          path_on_host: rootfs,
-          is_root_device: true,
-          is_read_only: false
-        )
-        |> Firecracker.configure(:balloon, amount_mib: 100, deflate_on_oom: true)
-        |> Firecracker.start()
-        |> Firecracker.boot()
+        vm =
+          Firecracker.new()
+          |> Firecracker.configure(:boot_source, kernel_image_path: kernel)
+          |> Firecracker.add(:drive, "rootfs",
+            path_on_host: rootfs,
+            is_root_device: true,
+            is_read_only: false
+          )
+          |> Firecracker.configure(:balloon, amount_mib: 100, deflate_on_oom: true)
+          |> Firecracker.start()
+          |> Firecracker.boot()
 
-      on_exit(fn -> Firecracker.stop(vm) end)
+        on_exit(fn -> Firecracker.stop(vm) end)
 
-      [vm: vm]
+        [vm: vm]
+      end
     end
 
     test "updates balloon stats_polling_interval_s after VM start", %{vm: vm} do
@@ -3983,23 +3985,25 @@ defmodule FirecrackerTest do
   describe "boot/1" do
     @describetag :vm
 
-    setup do
-      kernel = FirecrackerHelpers.fetch_kernel!()
-      rootfs = FirecrackerHelpers.fetch_rootfs!()
+    setup context do
+      with :ok <- TestRequirements.context(context) do
+        kernel = FirecrackerHelpers.fetch_kernel!()
+        rootfs = FirecrackerHelpers.fetch_rootfs!()
 
-      vm =
-        Firecracker.new()
-        |> Firecracker.configure(:boot_source, kernel_image_path: kernel)
-        |> Firecracker.add(:drive, "rootfs",
-          path_on_host: rootfs,
-          is_root_device: true,
-          is_read_only: false
-        )
-        |> Firecracker.start()
+        vm =
+          Firecracker.new()
+          |> Firecracker.configure(:boot_source, kernel_image_path: kernel)
+          |> Firecracker.add(:drive, "rootfs",
+            path_on_host: rootfs,
+            is_root_device: true,
+            is_read_only: false
+          )
+          |> Firecracker.start()
 
-      on_exit(fn -> Firecracker.stop(vm) end)
+        on_exit(fn -> Firecracker.stop(vm) end)
 
-      [vm: vm]
+        [vm: vm]
+      end
     end
 
     test "boots a vm", %{vm: vm} do
@@ -4017,24 +4021,26 @@ defmodule FirecrackerTest do
   describe "pause/1" do
     @describetag :vm
 
-    setup do
-      kernel = FirecrackerHelpers.fetch_kernel!()
-      rootfs = FirecrackerHelpers.fetch_rootfs!()
+    setup context do
+      with :context <- TestRequirements.check(context) do
+        kernel = FirecrackerHelpers.fetch_kernel!()
+        rootfs = FirecrackerHelpers.fetch_rootfs!()
 
-      vm =
-        Firecracker.new()
-        |> Firecracker.configure(:boot_source, kernel_image_path: kernel)
-        |> Firecracker.add(:drive, "rootfs",
-          path_on_host: rootfs,
-          is_root_device: true,
-          is_read_only: false
-        )
-        |> Firecracker.start()
-        |> Firecracker.boot()
+        vm =
+          Firecracker.new()
+          |> Firecracker.configure(:boot_source, kernel_image_path: kernel)
+          |> Firecracker.add(:drive, "rootfs",
+            path_on_host: rootfs,
+            is_root_device: true,
+            is_read_only: false
+          )
+          |> Firecracker.start()
+          |> Firecracker.boot()
 
-      on_exit(fn -> Firecracker.stop(vm) end)
+        on_exit(fn -> Firecracker.stop(vm) end)
 
-      [vm: vm]
+        [vm: vm]
+      end
     end
 
     test "pauses a running vm", %{vm: vm} do
@@ -4063,24 +4069,26 @@ defmodule FirecrackerTest do
   describe "resume/1" do
     @describetag :vm
 
-    setup do
-      kernel = FirecrackerHelpers.fetch_kernel!()
-      rootfs = FirecrackerHelpers.fetch_rootfs!()
+    setup context do
+      with :ok <- TestRequirements.check(context) do
+        kernel = FirecrackerHelpers.fetch_kernel!()
+        rootfs = FirecrackerHelpers.fetch_rootfs!()
 
-      vm =
-        Firecracker.new()
-        |> Firecracker.configure(:boot_source, kernel_image_path: kernel)
-        |> Firecracker.add(:drive, "rootfs",
-          path_on_host: rootfs,
-          is_root_device: true,
-          is_read_only: false
-        )
-        |> Firecracker.start()
-        |> Firecracker.boot()
+        vm =
+          Firecracker.new()
+          |> Firecracker.configure(:boot_source, kernel_image_path: kernel)
+          |> Firecracker.add(:drive, "rootfs",
+            path_on_host: rootfs,
+            is_root_device: true,
+            is_read_only: false
+          )
+          |> Firecracker.start()
+          |> Firecracker.boot()
 
-      on_exit(fn -> Firecracker.stop(vm) end)
+        on_exit(fn -> Firecracker.stop(vm) end)
 
-      [vm: vm]
+        [vm: vm]
+      end
     end
 
     test "resumes a paused vm", %{vm: vm} do
@@ -4107,24 +4115,26 @@ defmodule FirecrackerTest do
   describe "shutdown/1" do
     @describetag :vm
 
-    setup do
-      kernel = FirecrackerHelpers.fetch_kernel!()
-      rootfs = FirecrackerHelpers.fetch_rootfs!()
+    setup context do
+      with :ok <- TestRequirements.check(context) do
+        kernel = FirecrackerHelpers.fetch_kernel!()
+        rootfs = FirecrackerHelpers.fetch_rootfs!()
 
-      vm =
-        Firecracker.new()
-        |> Firecracker.configure(:boot_source, kernel_image_path: kernel)
-        |> Firecracker.add(:drive, "rootfs",
-          path_on_host: rootfs,
-          is_root_device: true,
-          is_read_only: false
-        )
-        |> Firecracker.start()
-        |> Firecracker.boot()
+        vm =
+          Firecracker.new()
+          |> Firecracker.configure(:boot_source, kernel_image_path: kernel)
+          |> Firecracker.add(:drive, "rootfs",
+            path_on_host: rootfs,
+            is_root_device: true,
+            is_read_only: false
+          )
+          |> Firecracker.start()
+          |> Firecracker.boot()
 
-      on_exit(fn -> Firecracker.stop(vm) end)
+        on_exit(fn -> Firecracker.stop(vm) end)
 
-      [vm: vm]
+        [vm: vm]
+      end
     end
 
     test "shutsdown a running vm", %{vm: vm} do
@@ -4150,24 +4160,26 @@ defmodule FirecrackerTest do
   describe "stop/1" do
     @describetag :vm
 
-    setup do
-      kernel = FirecrackerHelpers.fetch_kernel!()
-      rootfs = FirecrackerHelpers.fetch_rootfs!()
+    setup context do
+      with :ok <- TestRequirements.check(context) do
+        kernel = FirecrackerHelpers.fetch_kernel!()
+        rootfs = FirecrackerHelpers.fetch_rootfs!()
 
-      vm =
-        Firecracker.new()
-        |> Firecracker.configure(:boot_source, kernel_image_path: kernel)
-        |> Firecracker.add(:drive, "rootfs",
-          path_on_host: rootfs,
-          is_root_device: true,
-          is_read_only: false
-        )
-        |> Firecracker.start()
+        vm =
+          Firecracker.new()
+          |> Firecracker.configure(:boot_source, kernel_image_path: kernel)
+          |> Firecracker.add(:drive, "rootfs",
+            path_on_host: rootfs,
+            is_root_device: true,
+            is_read_only: false
+          )
+          |> Firecracker.start()
 
-      # Stopping a VM that's already stopped is a no-op anyway, so this is fine
-      on_exit(fn -> Firecracker.stop(vm) end)
+        # Stopping a VM that's already stopped is a no-op anyway, so this is fine
+        on_exit(fn -> Firecracker.stop(vm) end)
 
-      [vm: vm]
+        [vm: vm]
+      end
     end
 
     test "stops a vm", %{vm: vm} do

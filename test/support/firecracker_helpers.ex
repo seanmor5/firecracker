@@ -90,7 +90,9 @@ defmodule TestRequirements do
     if tap_exists?(tap) do
       :ok
     else
-      msg = "tap device '#{tap}' not found. Create with: sudo ip tuntap add dev #{tap} mode tap && sudo ip link set #{tap} up"
+      msg =
+        "tap device '#{tap}' not found. Create with: sudo ip tuntap add dev #{tap} mode tap && sudo ip link set #{tap} up"
+
       IO.warn(msg)
       {:ok, skip: msg}
     end
@@ -125,7 +127,10 @@ defmodule TestRequirements do
     else
       installed = installed_version() || "not found"
       required = @feature_versions[feature]
-      msg = "feature '#{feature}' requires Firecracker >= #{required}, but #{installed} is installed"
+
+      msg =
+        "feature '#{feature}' requires Firecracker >= #{required}, but #{installed} is installed"
+
       IO.warn(msg)
       {:ok, skip: msg}
     end
