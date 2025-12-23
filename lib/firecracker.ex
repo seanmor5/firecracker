@@ -1004,7 +1004,7 @@ defmodule Firecracker do
   @spec start(t()) :: t()
   def start(%Firecracker{state: :initial, id: id, config_file: config_file} = vm) do
     %{binary: binary, args: args, api_sock: sock, config: config} = Firecracker.dry_run(vm)
-
+  
     {args, config_file} =
       if is_nil(sock) and is_nil(config_file) do
         path = Path.join([System.tmp_dir(), "#{id}.config.json"])
@@ -1840,7 +1840,6 @@ defmodule Firecracker do
     |> Enum.flat_map(&Tuple.to_list/1)
   end
 
-  defp option(val) when is_function(val), do: val.()
   defp option(val) when is_integer(val), do: "#{val}"
   defp option(val) when is_atom(val), do: Atom.to_string(val)
   defp option(val) when is_binary(val), do: val

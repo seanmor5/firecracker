@@ -2882,27 +2882,6 @@ defmodule FirecrackerTest do
              } = vm
     end
 
-    test "starts VM with function-valued options" do
-      vm =
-        Firecracker.new()
-        |> Firecracker.set_option(:id, fn ->
-          "dynamic-id-#{System.unique_integer([:positive])}"
-        end)
-        |> Firecracker.set_option(:api_sock, fn ->
-          "/tmp/dynamic-#{System.unique_integer([:positive])}.sock"
-        end)
-        |> Firecracker.start()
-
-      on_exit(fn -> Firecracker.stop(vm) end)
-
-      assert %Firecracker{
-               id: "dynamic-id-" <> _,
-               api_sock: "/tmp/dynamic-" <> _,
-               process: %Px{},
-               state: :started
-             } = vm
-    end
-
     test "socket cleanup on stop after start" do
       vm =
         Firecracker.new()
