@@ -3739,8 +3739,8 @@ defmodule FirecrackerTest do
         |> Firecracker.configure(:balloon, amount_mib: 75, stats_polling_interval_s: 2)
         |> Firecracker.apply()
 
-      assert vm.balloon.applied? == true
       assert [] = vm.errors
+      assert vm.balloon.applied? == true
 
       # Second batch - update machine_config
       vm =
@@ -3748,9 +3748,9 @@ defmodule FirecrackerTest do
         |> Firecracker.configure(:machine_config, vcpu_count: 2, mem_size_mib: 512)
         |> Firecracker.apply()
 
+      assert [] = vm.errors
       assert vm.balloon.applied? == true
       assert vm.machine_config.applied? == true
-      assert [] = vm.errors
 
       # Third batch - update metadata
       vm =
@@ -3758,10 +3758,10 @@ defmodule FirecrackerTest do
         |> Firecracker.metadata("env", "production")
         |> Firecracker.apply()
 
+      assert [] = vm.errors
       assert vm.balloon.applied? == true
       assert vm.machine_config.applied? == true
       assert vm.mmds.applied? == true
-      assert [] = vm.errors
 
       # Verify all configurations are present
       balloon_config = Firecracker.describe(vm, :balloon)
