@@ -1,7 +1,10 @@
 defmodule FirecrackerTest do
   use ExUnit.Case, async: false
 
-  # TODO: Test failures need to kill all firecracker VMs and clean up sockets
+  setup do
+    on_exit(fn -> TempFiles.cleanup() end)
+    :ok
+  end
 
   describe "new/1" do
     test "creates a new %Firecracker{} struct with default values" do
@@ -1993,24 +1996,21 @@ defmodule FirecrackerTest do
 
     test "starts a vm with logger" do
       # TODO: Figure out why it doesn't show logger changes on vm_config?
-      :ok = File.touch!("/tmp/fc.log")
+      log_path = TempFiles.touch!("fc", ".log")
 
       vm =
         Firecracker.new()
         |> Firecracker.configure(:logger,
-          log_path: "/tmp/fc.log",
+          log_path: log_path,
           level: "Info",
           show_level: true
         )
         |> Firecracker.start()
 
-      on_exit(fn ->
-        Firecracker.stop(vm)
-        File.rm("/tmp/fc.log")
-      end)
+      on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{
-               logger: %Firecracker.Logger{log_path: "/tmp/fc.log"},
+               logger: %Firecracker.Logger{log_path: ^log_path},
                api_sock: sock,
                process: %Px{},
                state: :started
@@ -2021,7 +2021,7 @@ defmodule FirecrackerTest do
       assert [] = vm.errors
 
       assert %{
-               "logger" => %{"log_path" => "/tmp/fc.log", "level" => "Info", "show_level" => true}
+               "logger" => %{"log_path" => ^log_path, "level" => "Info", "show_level" => true}
              } =
                Firecracker.describe(vm, :vm_config)
     end
@@ -2184,18 +2184,14 @@ defmodule FirecrackerTest do
     end
 
     test "starts a vm with :log_path option" do
-      log_path = "/tmp/fc-test-#{System.unique_integer([:positive])}.log"
-      :ok = File.touch!(log_path)
+      log_path = TempFiles.touch!("fc-test", ".log")
 
       vm =
         Firecracker.new()
         |> Firecracker.set_option(:log_path, log_path)
         |> Firecracker.start()
 
-      on_exit(fn ->
-        Firecracker.stop(vm)
-        File.rm(log_path)
-      end)
+      on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
@@ -2206,18 +2202,14 @@ defmodule FirecrackerTest do
     end
 
     test "starts a vm with :metrics_path option" do
-      metrics_path = "/tmp/fc-metrics-#{System.unique_integer([:positive])}.fifo"
-      {_, 0} = System.cmd("mkfifo", [metrics_path])
+      metrics_path = TempFiles.mkfifo!("fc-metrics")
 
       vm =
         Firecracker.new()
         |> Firecracker.set_option(:metrics_path, metrics_path)
         |> Firecracker.start()
 
-      on_exit(fn ->
-        Firecracker.stop(vm)
-        File.rm(metrics_path)
-      end)
+      on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
@@ -2257,8 +2249,6 @@ defmodule FirecrackerTest do
     end
 
     test "starts a vm with :seccomp_filter option" do
-      filter_path = "/tmp/custom-seccomp-#{System.unique_integer([:positive])}.json"
-
       # Create a minimal valid seccomp filter
       filter_content = ~s({
         "main": {
@@ -2268,17 +2258,14 @@ defmodule FirecrackerTest do
         }
       })
 
-      File.write!(filter_path, filter_content)
+      filter_path = TempFiles.write!("custom-seccomp", ".json", filter_content)
 
       vm =
         Firecracker.new()
         |> Firecracker.set_option(:seccomp_filter, filter_path)
         |> Firecracker.start()
 
-      on_exit(fn ->
-        Firecracker.stop(vm)
-        File.rm(filter_path)
-      end)
+      on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
@@ -2329,8 +2316,7 @@ defmodule FirecrackerTest do
     end
 
     test "starts a vm with multiple options combined" do
-      log_path = "/tmp/fc-multi-#{System.unique_integer([:positive])}.log"
-      :ok = File.touch!(log_path)
+      log_path = TempFiles.touch!("fc-multi", ".log")
 
       vm =
         Firecracker.new()
@@ -2341,10 +2327,7 @@ defmodule FirecrackerTest do
         |> Firecracker.set_option(:http_api_max_payload_size, 102_400)
         |> Firecracker.start()
 
-      on_exit(fn ->
-        Firecracker.stop(vm)
-        File.rm(log_path)
-      end)
+      on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
@@ -2406,18 +2389,14 @@ defmodule FirecrackerTest do
     end
 
     test "starts a vm with pmem device" do
-      pmem_file = "/tmp/pmem-#{System.unique_integer([:positive])}.img"
-      :ok = File.write!(pmem_file, :binary.copy(<<0>>, 1024 * 1024))
+      pmem_file = TempFiles.write!("pmem", ".img", :binary.copy(<<0>>, 1024 * 1024))
 
       vm =
         Firecracker.new()
         |> Firecracker.add(:pmem, "pmem0", path_on_host: pmem_file)
         |> Firecracker.start()
 
-      on_exit(fn ->
-        Firecracker.stop(vm)
-        File.rm(pmem_file)
-      end)
+      on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
@@ -2428,10 +2407,8 @@ defmodule FirecrackerTest do
     end
 
     test "starts a vm with multiple pmem devices" do
-      pmem_file1 = "/tmp/pmem1-#{System.unique_integer([:positive])}.img"
-      pmem_file2 = "/tmp/pmem2-#{System.unique_integer([:positive])}.img"
-      :ok = File.write!(pmem_file1, :binary.copy(<<0>>, 1024 * 1024))
-      :ok = File.write!(pmem_file2, :binary.copy(<<0>>, 1024 * 1024))
+      pmem_file1 = TempFiles.write!("pmem1", ".img", :binary.copy(<<0>>, 1024 * 1024))
+      pmem_file2 = TempFiles.write!("pmem2", ".img", :binary.copy(<<0>>, 1024 * 1024))
 
       vm =
         Firecracker.new()
@@ -2439,11 +2416,7 @@ defmodule FirecrackerTest do
         |> Firecracker.add(:pmem, "pmem1", path_on_host: pmem_file2)
         |> Firecracker.start()
 
-      on_exit(fn ->
-        Firecracker.stop(vm)
-        File.rm(pmem_file1)
-        File.rm(pmem_file2)
-      end)
+      on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
@@ -2458,18 +2431,14 @@ defmodule FirecrackerTest do
     end
 
     test "starts a vm with metrics configuration" do
-      metrics_path = "/tmp/fc-metrics-cfg-#{System.unique_integer([:positive])}.fifo"
-      {_, 0} = System.cmd("mkfifo", [metrics_path])
+      metrics_path = TempFiles.mkfifo!("fc-metrics-cfg")
 
       vm =
         Firecracker.new()
         |> Firecracker.configure(:metrics, metrics_path: metrics_path)
         |> Firecracker.start()
 
-      on_exit(fn ->
-        Firecracker.stop(vm)
-        File.rm(metrics_path)
-      end)
+      on_exit(fn -> Firecracker.stop(vm) end)
 
       assert [] = vm.errors
 
@@ -2479,9 +2448,7 @@ defmodule FirecrackerTest do
 
     test "starts a vm with multiple drives" do
       rootfs = FirecrackerHelpers.fetch_rootfs!()
-
-      drive2_path = "/tmp/drive2-#{System.unique_integer([:positive])}.img"
-      :ok = File.write!(drive2_path, :binary.copy(<<0>>, 1024 * 1024))
+      drive2_path = TempFiles.write!("drive2", ".img", :binary.copy(<<0>>, 1024 * 1024))
 
       vm =
         Firecracker.new()
@@ -2497,10 +2464,7 @@ defmodule FirecrackerTest do
         )
         |> Firecracker.start()
 
-      on_exit(fn ->
-        Firecracker.stop(vm)
-        File.rm(drive2_path)
-      end)
+      on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{state: :started} = vm
 
@@ -2609,8 +2573,6 @@ defmodule FirecrackerTest do
     end
 
     test "starts a vm with config_file option" do
-      config_path = "/tmp/fc-config-#{System.unique_integer([:positive])}.json"
-
       config = %{
         "machine-config" => %{
           "vcpu_count" => 2,
@@ -2618,17 +2580,14 @@ defmodule FirecrackerTest do
         }
       }
 
-      File.write!(config_path, :json.encode(config))
+      config_path = TempFiles.write!("fc-config", ".json", :json.encode(config))
 
       vm =
         Firecracker.new()
         |> Firecracker.set_option(:config_file, config_path)
         |> Firecracker.start()
 
-      on_exit(fn ->
-        Firecracker.stop(vm)
-        File.rm(config_path)
-      end)
+      on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{
                api_sock: sock,
@@ -2653,10 +2612,7 @@ defmodule FirecrackerTest do
         |> Firecracker.start()
 
       on_exit(fn ->
-        if vm.config_file && File.exists?(vm.config_file) do
-          File.rm(vm.config_file)
-        end
-
+        if vm.config_file, do: TempFiles.register(vm.config_file)
         Firecracker.stop(vm)
       end)
 
@@ -2689,18 +2645,14 @@ defmodule FirecrackerTest do
     end
 
     test "starts a vm with jailer and chroot_base_dir" do
-      chroot_dir = "/tmp/jailer-test-#{System.unique_integer([:positive])}"
-      File.mkdir_p!(chroot_dir)
+      chroot_dir = TempFiles.mkdir_p!("jailer-test")
 
       vm =
         Firecracker.new()
         |> Firecracker.jail(uid: 1000, gid: 1000, chroot_base_dir: chroot_dir)
         |> Firecracker.start()
 
-      on_exit(fn ->
-        Firecracker.stop(vm)
-        File.rm_rf(chroot_dir)
-      end)
+      on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{
                jailer: %Firecracker.Jailer{chroot_base_dir: ^chroot_dir},
@@ -2754,8 +2706,7 @@ defmodule FirecrackerTest do
     end
 
     test "starts a vm with jailer and all options" do
-      chroot_dir = "/tmp/jailer-full-#{System.unique_integer([:positive])}"
-      File.mkdir_p!(chroot_dir)
+      chroot_dir = TempFiles.mkdir_p!("jailer-full")
 
       vm =
         Firecracker.new()
@@ -2769,10 +2720,7 @@ defmodule FirecrackerTest do
         |> Firecracker.resource_limit("fsize", 1024 * 1024 * 1024)
         |> Firecracker.start()
 
-      on_exit(fn ->
-        Firecracker.stop(vm)
-        File.rm_rf(chroot_dir)
-      end)
+      on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{
                jailer: %Firecracker.Jailer{
@@ -2840,8 +2788,7 @@ defmodule FirecrackerTest do
 
     test "handles missing permissions gracefully" do
       # Create a directory without write permissions
-      restricted_dir = "/tmp/restricted-#{System.unique_integer([:positive])}"
-      File.mkdir_p!(restricted_dir)
+      restricted_dir = TempFiles.mkdir_p!("restricted")
       File.chmod!(restricted_dir, 0o444)
 
       vm =
@@ -2849,9 +2796,8 @@ defmodule FirecrackerTest do
         |> Firecracker.set_option(:api_sock, "#{restricted_dir}/firecracker.sock")
 
       on_exit(fn ->
-        # Restore permissions before cleanup
+        # Restore permissions before cleanup (TempFiles.cleanup will remove it)
         File.chmod!(restricted_dir, 0o755)
-        File.rm_rf!(restricted_dir)
       end)
 
       assert_raise RuntimeError, ~r/Failed to start Firecracker/, fn ->
@@ -2861,8 +2807,8 @@ defmodule FirecrackerTest do
 
     test "starts VM with all device types combined" do
       rootfs = FirecrackerHelpers.fetch_rootfs!()
-      pmem_file = "/tmp/pmem-all-#{System.unique_integer([:positive])}.img"
-      :ok = File.write!(pmem_file, :binary.copy(<<0>>, 1024 * 1024))
+      pmem_file = TempFiles.write!("pmem-all", ".img", :binary.copy(<<0>>, 1024 * 1024))
+      vsock_path = TempFiles.path("vsock-all", ".sock")
 
       vm =
         Firecracker.new()
@@ -2872,7 +2818,7 @@ defmodule FirecrackerTest do
           kernel_image_path: "test/cache/vmlinux",
           boot_args: "console=ttyS0"
         )
-        |> Firecracker.configure(:vsock, guest_cid: 3, uds_path: "/tmp/vsock-all.sock")
+        |> Firecracker.configure(:vsock, guest_cid: 3, uds_path: vsock_path)
         |> Firecracker.configure(:entropy, [])
         |> Firecracker.configure(:serial, [])
         |> Firecracker.add(:drive, "rootfs",
@@ -2888,10 +2834,7 @@ defmodule FirecrackerTest do
         |> Firecracker.metadata("test", "value")
         |> Firecracker.start()
 
-      on_exit(fn ->
-        Firecracker.stop(vm)
-        File.rm(pmem_file)
-      end)
+      on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{state: :started} = vm
 
@@ -2964,7 +2907,8 @@ defmodule FirecrackerTest do
     end
 
     test "verifies vsock cleanup on stop after start" do
-      vsock_path = "/tmp/vsock-cleanup-#{System.unique_integer([:positive])}.sock"
+      # Register path for cleanup in case test fails before stop
+      vsock_path = TempFiles.path("vsock-cleanup", ".sock")
 
       vm =
         Firecracker.new()
