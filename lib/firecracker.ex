@@ -1179,7 +1179,12 @@ defmodule Firecracker do
   @spec stop(t()) :: t()
   def stop(%Firecracker{process: %Px{} = p, state: state} = vm)
       when state in [:started, :running, :paused] do
-    p = Px.wait(Px.signal!(p, :sigterm))
+    p =
+      case Px.signal(p, :sigterm) do
+        {:ok, signaled} -> Px.wait(signaled)
+        {:error, :already_exited} -> p
+      end
+
     cleanup_files!(vm)
     %{vm | process: p, state: :exited}
   end
