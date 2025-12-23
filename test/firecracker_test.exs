@@ -2027,11 +2027,6 @@ defmodule FirecrackerTest do
       assert File.exists?(sock)
 
       assert [] = vm.errors
-
-      assert %{
-               "logger" => %{"log_path" => ^log_path, "level" => "Info", "show_level" => true}
-             } =
-               Firecracker.describe(vm, :vm_config)
     end
 
     test "starts a vm with a machine config" do

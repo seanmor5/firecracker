@@ -1045,8 +1045,8 @@ defmodule Firecracker do
           |> Px.wait()
         end
 
-        if config_file, do: File.rm_rf!(config_file)
-        if sock, do: File.rm_rf!(sock)
+        if config_file, do: File.rm_rf(config_file)
+        if sock, do: File.rm_rf(sock)
 
         command = Enum.join([binary | args], " ")
         raise "Failed to start Firecracker: #{inspect(reason)}\n\nCommand: #{command}"
