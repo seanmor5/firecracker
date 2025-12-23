@@ -91,7 +91,7 @@ defmodule TapDevice do
         "tap device '#{tap}' not found. Create with: sudo ip tuntap add dev #{tap} mode tap && sudo ip link set #{tap} up"
       )
 
-      {:skip, "tap device '#{tap}' not available"}
+      {:ok, skip: true}
     end
   end
 
