@@ -29,8 +29,8 @@ jobs:
 
       - name: Extract rootfs
         run: |
-          mkdir rootfs
-          tar -xzf rootfs.tar.gz -C rootfs
+          sudo mkdir rootfs
+          sudo tar -xzf rootfs.tar.gz -C rootfs
 
       - name: Create ext4 image
         run: |
