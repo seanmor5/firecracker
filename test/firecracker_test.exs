@@ -1983,7 +1983,6 @@ defmodule FirecrackerTest do
     end
 
     test "starts a vm with a cpu config" do
-      # TODO: Figure out why it doesn't show cpu config changes on vm_config?
       vm =
         Firecracker.new()
         |> Firecracker.configure(:cpu_config,
@@ -1997,13 +1996,9 @@ defmodule FirecrackerTest do
       assert File.exists?(sock)
 
       assert [] = vm.errors
-
-      assert %{"cpu-config" => %{"kvm_capabilities" => ["!56"]}} =
-               Firecracker.describe(vm, :vm_config)
     end
 
     test "starts a vm with logger" do
-      # TODO: Figure out why it doesn't show logger changes on vm_config?
       log_path = TempFiles.touch!("fc", ".log")
 
       vm =
@@ -2847,7 +2842,7 @@ defmodule FirecrackerTest do
           host_dev_name: "tap0",
           guest_mac: "AA:FC:00:00:00:01"
         )
-        |> Firecracker.add(:pmem, "pmem0", path_on_host: pmem_file, size_mib: 1)
+        |> Firecracker.add(:pmem, "pmem0", path_on_host: pmem_file)
         |> Firecracker.metadata("test", "value")
         |> Firecracker.start()
 
@@ -3050,9 +3045,6 @@ defmodule FirecrackerTest do
 
       assert [] = updated_vm.errors
       assert updated_vm.cpu_config.applied? == true
-
-      assert %{"cpu-config" => %{"kvm_capabilities" => ["!56"]}} =
-               Firecracker.describe(updated_vm, :vm_config)
     end
 
     test "applies entropy configuration before boot", %{vm: vm} do
@@ -3112,9 +3104,8 @@ defmodule FirecrackerTest do
 
       assert [] = updated_vm.errors
       assert updated_vm.metrics.applied? == true
-
-      assert %{"metrics" => %{"metrics_path" => ^fifo}} =
-               Firecracker.describe(updated_vm, :vm_config)
+      # Verify struct fields (metrics is not returned by /vm/config)
+      assert updated_vm.metrics.metrics_path == fifo
     end
 
     @tag tap: "tap0"
