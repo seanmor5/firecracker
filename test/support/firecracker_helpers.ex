@@ -82,7 +82,8 @@ defmodule TestRequirements do
 
   def check(context) do
     with :ok <- check_tap(context),
-         :ok <- check_feature(context) do
+         :ok <- check_feature(context),
+         :ok <- check_sudo(context) do
       :ok
     end
   end
@@ -157,6 +158,15 @@ defmodule TestRequirements do
   end
 
   defp check_feature(_context), do: :ok
+
+  defp check_sudo(%{sudo: true}) do
+    case System.cmd("id", ["-u"]) do
+      {"0\n", 0} -> :ok
+      _ -> {:ok, skip: "test requires root privileges (run with sudo)"}
+    end
+  end
+
+  defp check_sudo(_context), do: :ok
 
   defp feature_supported?(feature) when is_atom(feature) do
     case installed_version() do

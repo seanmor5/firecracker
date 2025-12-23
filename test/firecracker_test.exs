@@ -3076,15 +3076,17 @@ defmodule FirecrackerTest do
     end
 
     test "applies logger configuration before boot", %{vm: vm} do
+      log_path = TempFiles.touch!("firecracker", ".log")
+
       updated_vm =
         vm
-        |> Firecracker.configure(:logger, level: "Debug", log_path: "/tmp/firecracker.log")
+        |> Firecracker.configure(:logger, level: "Debug", log_path: log_path)
         |> Firecracker.apply()
 
       assert [] = updated_vm.errors
       assert updated_vm.logger.applied? == true
 
-      assert %{"logger" => %{"log_path" => "/tmp/firecracker.log", "level" => "Debug"}} =
+      assert %{"logger" => %{"log_path" => ^log_path, "level" => "Debug"}} =
                Firecracker.describe(updated_vm, :vm_config)
     end
 
@@ -3102,15 +3104,17 @@ defmodule FirecrackerTest do
     end
 
     test "applies metrics configuration before boot", %{vm: vm} do
+      fifo = TempFiles.mkfifo!("fc-metrics")
+
       updated_vm =
         vm
-        |> Firecracker.configure(:metrics, metrics_path: "/tmp/firecracker_metrics.fifo")
+        |> Firecracker.configure(:metrics, metrics_path: fifo)
         |> Firecracker.apply()
 
       assert [] = updated_vm.errors
       assert updated_vm.metrics.applied? == true
 
-      assert %{"metrics" => %{"metrics_path" => "/tmp/firecracker_metrics.fifo"}} =
+      assert %{"metrics" => %{"metrics_path" => ^fifo}} =
                Firecracker.describe(updated_vm, :vm_config)
     end
 
@@ -3663,7 +3667,7 @@ defmodule FirecrackerTest do
       assert vm.balloon.applied? == true
 
       # Reconfigure balloon
-      vm = Firecracker.configure(vm, :balloon, amount_mib: 5, deflate_on_oom: true)
+      vm = Firecracker.configure(vm, :balloon, amount_mib: 5)
       assert vm.balloon.applied? == false
       assert [] = vm.errors
 

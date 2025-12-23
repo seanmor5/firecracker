@@ -1205,8 +1205,8 @@ defmodule Firecracker do
       serial: serial
     } = vm
 
-    if api_sock, do: File.rm_rf!(api_sock)
-    if config, do: File.rm_rf!(config)
+    if api_sock, do: File.rm_rf(api_sock)
+    if config, do: File.rm_rf(config)
 
     with %{uds_path: path} when is_binary(path) <- vsock do
       File.rm_rf(path)
