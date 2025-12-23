@@ -64,15 +64,15 @@ defimpl Firecracker.Model, for: Any do
         def patch(struct) do
           struct
           |> Map.from_struct()
-          |> Map.new(fn
-            {k, v} when k in @post_boot_keys ->
+          |> Map.new(fn {k, v} ->
+            if MapSet.member?(@post_boot_keys, k) do
               case v do
                 %Firecracker.RateLimiter{} = rl -> {k, Firecracker.RateLimiter.model(rl)}
                 _ -> {k, v}
               end
-
-            {k, _v} ->
+            else
               {k, nil}
+            end
           end)
           |> to_api_config()
         end
