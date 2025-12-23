@@ -1845,6 +1845,12 @@ defmodule FirecrackerTest do
   describe "start/1 full runs" do
     @describetag :vm
 
+    setup context do
+      with :ok <- TestRequirements.check(context) do
+        :ok
+      end
+    end
+
     test "starts a vm using the default firecracker path" do
       vm =
         Firecracker.new()
