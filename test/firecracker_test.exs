@@ -2180,16 +2180,17 @@ defmodule FirecrackerTest do
       vm =
         Firecracker.new()
         |> Firecracker.set_option(:level, "Debug")
-        |> Firecracker.start()
 
+      %{args: args} = Firecracker.dry_run(vm)
+      assert "--level" in args
+      assert "Debug" in args
+
+      vm = Firecracker.start(vm)
       on_exit(fn -> Firecracker.stop(vm) end)
 
       assert [] = vm.errors
-
       assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
-
-      assert %{"logger" => %{"level" => "Debug"}} = Firecracker.describe(vm, :vm_config)
     end
 
     test "starts a vm with :log_path option" do
@@ -2198,16 +2199,17 @@ defmodule FirecrackerTest do
       vm =
         Firecracker.new()
         |> Firecracker.set_option(:log_path, log_path)
-        |> Firecracker.start()
 
+      %{args: args} = Firecracker.dry_run(vm)
+      assert "--log-path" in args
+      assert log_path in args
+
+      vm = Firecracker.start(vm)
       on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
-
       assert [] = vm.errors
-
-      assert %{"logger" => %{"log_path" => ^log_path}} = Firecracker.describe(vm, :vm_config)
     end
 
     test "starts a vm with :metrics_path option" do
@@ -2216,17 +2218,18 @@ defmodule FirecrackerTest do
       vm =
         Firecracker.new()
         |> Firecracker.set_option(:metrics_path, metrics_path)
-        |> Firecracker.start()
 
+      # Verify CLI arg is generated (metrics config is not returned by /vm/config)
+      %{args: args} = Firecracker.dry_run(vm)
+      assert "--metrics-path" in args
+      assert metrics_path in args
+
+      vm = Firecracker.start(vm)
       on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
-
       assert [] = vm.errors
-
-      assert %{"metrics" => %{"metrics_path" => ^metrics_path}} =
-               Firecracker.describe(vm, :vm_config)
     end
 
     test "starts a vm with :mmds_size_limit option" do
@@ -2245,16 +2248,18 @@ defmodule FirecrackerTest do
       vm =
         Firecracker.new()
         |> Firecracker.set_option(:module, "api_server")
-        |> Firecracker.start()
 
+      # Verify CLI arg is generated (logger config is not returned by /vm/config)
+      %{args: args} = Firecracker.dry_run(vm)
+      assert "--module" in args
+      assert "api_server" in args
+
+      vm = Firecracker.start(vm)
       on_exit(fn -> Firecracker.stop(vm) end)
 
       assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
-
       assert [] = vm.errors
-
-      assert %{"logger" => %{"module" => "api_server"}} = Firecracker.describe(vm, :vm_config)
     end
 
     test "starts a vm with :seccomp_filter option" do
@@ -3085,9 +3090,8 @@ defmodule FirecrackerTest do
 
       assert [] = updated_vm.errors
       assert updated_vm.logger.applied? == true
-
-      assert %{"logger" => %{"log_path" => ^log_path, "level" => "Debug"}} =
-               Firecracker.describe(updated_vm, :vm_config)
+      assert updated_vm.logger.level == "Debug"
+      assert updated_vm.logger.log_path == log_path
     end
 
     test "applies machine_config configuration before boot", %{vm: vm} do
