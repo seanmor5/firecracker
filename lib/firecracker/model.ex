@@ -59,14 +59,21 @@ defimpl Firecracker.Model, for: Any do
           |> to_api_config()
         end
 
+        @post_boot_keys unquote(Macro.escape(post_boot_schema)).schema |> Keyword.keys() |> MapSet.new()
+
         def patch(struct) do
           struct
           |> Map.from_struct()
           |> Map.new(fn
-            {k, %Firecracker.RateLimiter{} = rl} -> {k, Firecracker.RateLimiter.model(rl)}
-            {k, v} -> {k, v}
+            {k, v} when k in @post_boot_keys ->
+              case v do
+                %Firecracker.RateLimiter{} = rl -> {k, Firecracker.RateLimiter.model(rl)}
+                _ -> {k, v}
+              end
+
+            {k, _v} ->
+              {k, nil}
           end)
-          |> Map.delete(:applied?)
           |> to_api_config()
         end
 

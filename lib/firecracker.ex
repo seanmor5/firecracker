@@ -700,24 +700,16 @@ defmodule Firecracker do
     Firecracker.Model.validate_change!(model, Keyword.put(config, id_key, id), state)
 
     key = :"#{Atom.to_string(addable)}s"
-    current_map = get_in(vm, [Access.key!(key)])
-
-    # Get existing item if it exists, to merge with
-    existing =
-      case Map.get(current_map, id) do
-        nil -> %{}
-        struct -> Map.from_struct(struct)
-      end
+    current = get_in(vm, [Access.key!(key)])
 
     config =
       config
       |> Map.new()
-      |> Map.merge(existing, fn _k, new, _old -> new end)
       |> Map.put(id_key, id)
       |> Map.put(:applied?, false)
       |> then(&struct(module_name, &1))
 
-    %{vm | key => Map.put(current_map, id, config)}
+    %{vm | key => Map.put(current, id, config)}
   end
 
   def add(%Firecracker{}, invalid, _id, _config) do
