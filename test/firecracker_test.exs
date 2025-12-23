@@ -2640,9 +2640,11 @@ defmodule FirecrackerTest do
     end
 
     test "starts a vm with basic jailer configuration" do
+      chroot_dir = TempFiles.mkdir_p!("jailer-basic")
+
       vm =
         Firecracker.new()
-        |> Firecracker.jail(uid: 1000, gid: 1000)
+        |> Firecracker.jail(uid: 1000, gid: 1000, chroot_base_dir: chroot_dir)
         |> Firecracker.start()
 
       on_exit(fn -> Firecracker.stop(vm) end)
@@ -2672,9 +2674,11 @@ defmodule FirecrackerTest do
     end
 
     test "starts a vm with jailer and cgroup configuration" do
+      chroot_dir = TempFiles.mkdir_p!("jailer-cgroup")
+
       vm =
         Firecracker.new()
-        |> Firecracker.jail(uid: 1000, gid: 1000)
+        |> Firecracker.jail(uid: 1000, gid: 1000, chroot_base_dir: chroot_dir)
         |> Firecracker.cgroup("memory.limit_in_bytes", "512M")
         |> Firecracker.cgroup("cpu.cfs_quota_us", "100000")
         |> Firecracker.start()
@@ -2694,9 +2698,11 @@ defmodule FirecrackerTest do
     end
 
     test "starts a vm with jailer and resource limits" do
+      chroot_dir = TempFiles.mkdir_p!("jailer-rlimits")
+
       vm =
         Firecracker.new()
-        |> Firecracker.jail(uid: 1000, gid: 1000)
+        |> Firecracker.jail(uid: 1000, gid: 1000, chroot_base_dir: chroot_dir)
         |> Firecracker.resource_limit("fsize", 1024 * 1024 * 1024)
         |> Firecracker.resource_limit("no-file", 1024)
         |> Firecracker.start()
