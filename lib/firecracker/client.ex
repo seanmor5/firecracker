@@ -37,30 +37,28 @@ defmodule Firecracker.Client do
         %Firecracker.Balloon{stats_polling_interval_s: interval, amount_mib: amount} = balloon
       )
       when not is_nil(interval) and not is_nil(amount) do
-    stats_req = %{amount_mib: amount, stats_polling_interval_s: interval}
-
     resp =
       req
-      |> Req.put!(url: "/balloon/statistics", json: stats_req)
+      |> Req.put!(url: "/balloon/statistics", json: Model.patch(balloon))
       |> parse_resp(204)
 
     with {:ok, _} <- resp do
       req
-      |> Req.put!(url: Model.endpoint(balloon), json: %{amount_mib: amount})
+      |> Req.put!(url: Model.endpoint(balloon), json: Model.patch(balloon))
       |> parse_resp(204)
     end
   end
 
-  def patch(req, %Firecracker.Balloon{stats_polling_interval_s: interval})
+  def patch(req, %Firecracker.Balloon{stats_polling_interval_s: interval} = balloon)
       when not is_nil(interval) do
     req
-    |> Req.put!(url: "/balloon/statistics", json: %{amount_mib: nil, stats_polling_interval_s: interval})
+    |> Req.put!(url: "/balloon/statistics", json: Model.patch(balloon))
     |> parse_resp(204)
   end
 
   def patch(req, %Firecracker.Balloon{amount_mib: amount} = balloon) when not is_nil(amount) do
     req
-    |> Req.put!(url: Model.endpoint(balloon), json: %{amount_mib: amount})
+    |> Req.put!(url: Model.endpoint(balloon), json: Model.patch(balloon))
     |> parse_resp(204)
   end
 
