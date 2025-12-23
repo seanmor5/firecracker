@@ -2809,6 +2809,7 @@ defmodule FirecrackerTest do
       end
     end
 
+    @tag tap: "tap0"
     test "starts VM with all device types combined" do
       rootfs = FirecrackerHelpers.fetch_rootfs!()
       pmem_file = TempFiles.write!("pmem-all", ".img", :binary.copy(<<0>>, 1024 * 1024))
@@ -3007,6 +3008,7 @@ defmodule FirecrackerTest do
       assert updated_vm.drives["rootfs"].applied? == true
     end
 
+    @tag tap: "tap0"
     test "applies network_interface configuration before boot", %{vm: vm} do
       updated_vm =
         vm
@@ -3118,6 +3120,7 @@ defmodule FirecrackerTest do
                Firecracker.describe(updated_vm, :vm_config)
     end
 
+    @tag tap: "tap0"
     test "applies mmds_config configuration before boot", %{vm: vm} do
       updated_vm =
         vm
@@ -3192,6 +3195,7 @@ defmodule FirecrackerTest do
       assert updated_vm.drives["data2"].applied? == true
     end
 
+    @tag tap: "tap0"
     test "applies multiple network interfaces in one apply call", %{vm: vm} do
       updated_vm =
         vm
@@ -3222,6 +3226,7 @@ defmodule FirecrackerTest do
       assert updated_vm.pmems["pmem1"].applied? == true
     end
 
+    @tag tap: "tap0"
     test "applies all resource types together in one apply call", %{
       vm: vm,
       kernel: kernel,
@@ -3874,6 +3879,7 @@ defmodule FirecrackerTest do
       end
     end
 
+    @tag tap: "tap0"
     test "raises when trying to modify network_interface non-updatable fields after boot", %{
       vm: vm
     } do
