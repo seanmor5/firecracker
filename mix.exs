@@ -37,7 +37,7 @@ defmodule Firecracker.MixProject do
     [
       {:req, "~> 0.5"},
       {:nimble_options, "~> 1.0"},
-      {:p, github: "seanmor5/p"},
+      {:px, "~> 0.1.0"},
       {:ex_doc, "~> 0.34", only: :docs, runtime: false}
     ]
   end

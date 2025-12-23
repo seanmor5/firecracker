@@ -1014,7 +1014,7 @@ defmodule Firecracker do
         {args, config_file}
       end
 
-    p = P.spawn(binary, args)
+    p = Px.spawn(binary, args)
 
     case wait_for_process(p, 100) do
       :ok ->
@@ -1039,9 +1039,10 @@ defmodule Firecracker do
         Firecracker.apply(vm)
 
       {:error, reason} ->
-        if P.alive?(p) do
-          P.signal(p, :sigterm)
-          P.wait(p)
+        if Px.alive?(p) do
+          p
+          |> Px.signal(:sigterm)
+          |> Px.wait()
         end
 
         if config_file, do: File.rm_rf!(config_file)
@@ -1060,12 +1061,10 @@ defmodule Firecracker do
   defp wait_for_process(process, timeout_ms) do
     Process.sleep(timeout_ms)
 
-    if P.alive?(process) do
+    if Px.alive?(process) do
       :ok
     else
-      stdout = P.read_stdout(process)
-      stderr = P.read_stderr(process)
-      {:error, {:process_died, stdout, stderr}}
+      {:error, :process_died}
     end
   end
 
@@ -1178,9 +1177,9 @@ defmodule Firecracker do
   """
   @doc type: :lifecycle
   @spec stop(t()) :: t()
-  def stop(%Firecracker{process: %P{} = p, state: state} = vm)
+  def stop(%Firecracker{process: %Px{} = p, state: state} = vm)
       when state in [:started, :running, :paused] do
-    p = P.wait(P.signal(p, :sigterm))
+    p = Px.wait(Px.signal(p, :sigterm))
     cleanup_files!(vm)
     %{vm | process: p, state: :exited}
   end
@@ -1869,7 +1868,7 @@ defimpl Inspect, for: Firecracker do
     )
   end
 
-  defp get_pid(%P{pid: pid}), do: pid
+  defp get_pid(%Px{pid: pid}), do: pid
   defp get_pid(_), do: nil
 
   defp maybe_add_jailed(fields, %Firecracker.Jailer{}), do: fields ++ [jailed: true]

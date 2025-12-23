@@ -1847,7 +1847,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -1864,7 +1864,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: "/tmp/fire.sock" = sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: "/tmp/fire.sock" = sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -1881,7 +1881,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, id: "my-vmm", process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, id: "my-vmm", process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -1899,7 +1899,7 @@ defmodule FirecrackerTest do
 
       assert [] = vm.errors
 
-      assert %Firecracker{api_sock: nil, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: nil, process: %Px{}, state: :started} = vm
     end
 
     @boolean_flags [:boot_timer, :no_seccomp, :show_level, :show_log_origin]
@@ -1912,7 +1912,7 @@ defmodule FirecrackerTest do
 
         on_exit(fn -> Firecracker.stop(vm) end)
 
-        assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+        assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
         assert File.exists?(sock)
 
         assert [] = vm.errors
@@ -1930,7 +1930,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -1958,7 +1958,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -1982,7 +1982,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2012,7 +2012,7 @@ defmodule FirecrackerTest do
       assert %Firecracker{
                logger: %Firecracker.Logger{log_path: "/tmp/fc.log"},
                api_sock: sock,
-               process: %P{},
+               process: %Px{},
                state: :started
              } = vm
 
@@ -2034,7 +2034,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2058,7 +2058,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2075,7 +2075,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2093,7 +2093,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2163,7 +2163,7 @@ defmodule FirecrackerTest do
 
       assert [] = vm.errors
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
     end
 
@@ -2177,7 +2177,7 @@ defmodule FirecrackerTest do
 
       assert [] = vm.errors
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert %{"logger" => %{"level" => "Debug"}} = Firecracker.describe(vm, :vm_config)
@@ -2197,7 +2197,7 @@ defmodule FirecrackerTest do
         File.rm(log_path)
       end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2219,7 +2219,7 @@ defmodule FirecrackerTest do
         File.rm(metrics_path)
       end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2236,7 +2236,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
     end
 
@@ -2248,7 +2248,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2280,7 +2280,7 @@ defmodule FirecrackerTest do
         File.rm(filter_path)
       end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2294,7 +2294,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2308,7 +2308,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2322,7 +2322,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2346,7 +2346,7 @@ defmodule FirecrackerTest do
         File.rm(log_path)
       end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2360,7 +2360,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2382,7 +2382,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2401,7 +2401,7 @@ defmodule FirecrackerTest do
 
       assert [] = vm.errors
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
     end
 
@@ -2419,7 +2419,7 @@ defmodule FirecrackerTest do
         File.rm(pmem_file)
       end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2445,7 +2445,7 @@ defmodule FirecrackerTest do
         File.rm(pmem_file2)
       end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2473,7 +2473,7 @@ defmodule FirecrackerTest do
 
       assert [] = vm.errors
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
     end
 
@@ -2548,7 +2548,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2574,7 +2574,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2599,7 +2599,7 @@ defmodule FirecrackerTest do
 
       on_exit(fn -> Firecracker.stop(vm) end)
 
-      assert %Firecracker{api_sock: sock, process: %P{}, state: :started} = vm
+      assert %Firecracker{api_sock: sock, process: %Px{}, state: :started} = vm
       assert File.exists?(sock)
 
       assert [] = vm.errors
@@ -2633,7 +2633,7 @@ defmodule FirecrackerTest do
       assert %Firecracker{
                api_sock: sock,
                config_file: ^config_path,
-               process: %P{},
+               process: %Px{},
                state: :started
              } = vm
 
@@ -2664,7 +2664,7 @@ defmodule FirecrackerTest do
                api_sock: nil,
                config_file: config_file,
                no_api: true,
-               process: %P{},
+               process: %Px{},
                state: :started
              } = vm
 
@@ -2683,7 +2683,7 @@ defmodule FirecrackerTest do
 
       assert %Firecracker{
                jailer: %Firecracker.Jailer{uid: 1000, gid: 1000},
-               process: %P{},
+               process: %Px{},
                state: :started
              } = vm
     end
@@ -2704,7 +2704,7 @@ defmodule FirecrackerTest do
 
       assert %Firecracker{
                jailer: %Firecracker.Jailer{chroot_base_dir: ^chroot_dir},
-               process: %P{},
+               process: %Px{},
                state: :started
              } = vm
     end
@@ -2726,7 +2726,7 @@ defmodule FirecrackerTest do
                    "cpu.cfs_quota_us" => "100000"
                  }
                },
-               process: %P{},
+               process: %Px{},
                state: :started
              } = vm
     end
@@ -2748,7 +2748,7 @@ defmodule FirecrackerTest do
                    "no-file" => 1024
                  }
                },
-               process: %P{},
+               process: %Px{},
                state: :started
              } = vm
     end
@@ -2782,7 +2782,7 @@ defmodule FirecrackerTest do
                  cgroups: %{"memory.limit_in_bytes" => "512M"},
                  resource_limits: %{"fsize" => _}
                },
-               process: %P{},
+               process: %Px{},
                state: :started
              } = vm
     end
@@ -2923,7 +2923,7 @@ defmodule FirecrackerTest do
 
       assert %Firecracker{
                firecracker_path: ^custom_path,
-               process: %P{},
+               process: %Px{},
                state: :started
              } = vm
     end
@@ -2944,7 +2944,7 @@ defmodule FirecrackerTest do
       assert %Firecracker{
                id: "dynamic-id-" <> _,
                api_sock: "/tmp/dynamic-" <> _,
-               process: %P{},
+               process: %Px{},
                state: :started
              } = vm
     end
@@ -4172,7 +4172,7 @@ defmodule FirecrackerTest do
     end
 
     test "kills the OS process", %{vm: vm} do
-      assert %Firecracker{process: %P{pid: pid, status: {:exited, 143}}} =
+      assert %Firecracker{process: %Px{pid: pid, status: {:exited, 143}}} =
                Firecracker.stop(vm)
 
       assert {_, 1} = System.cmd("ps", ["-p", "#{pid}"])
@@ -4398,7 +4398,7 @@ defmodule FirecrackerTest do
 
     test "displays pid when process is set" do
       vm = Firecracker.new(id: "with-pid", api_sock: "/tmp/test.sock")
-      vm_with_process = %{vm | process: %P{pid: 12345}}
+      vm_with_process = %{vm | process: %Px{pid: 12345}}
       output = inspect(vm_with_process)
 
       assert output =~ "pid: 12345"
