@@ -185,19 +185,24 @@ defmodule TestRequirements do
   end
 
   defp fetch_version do
-    case Firecracker.which() do
-      nil ->
-        nil
+    with path when is_binary(path) <- Firecracker.which(),
+         {output, 0} <- System.cmd(path, ["--version"], stderr_to_stdout: true) do
+      parse_version(output)
+    else
+      _ -> nil
+    end
+  end
 
-      path ->
-        {output, 0} = System.cmd(path, ["--version"])
-
-        output
-        |> String.split("\n")
-        |> hd()
-        |> String.trim()
-        |> String.replace_leading("Firecracker v", "")
-        |> Version.parse!()
+  defp parse_version(output) do
+    output
+    |> String.split("\n")
+    |> hd()
+    |> String.trim()
+    |> String.replace_leading("Firecracker v", "")
+    |> Version.parse()
+    |> case do
+      {:ok, version} -> version
+      :error -> nil
     end
   end
 end

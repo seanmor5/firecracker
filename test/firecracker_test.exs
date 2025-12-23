@@ -3937,6 +3937,12 @@ defmodule FirecrackerTest do
   describe "describe/1" do
     @describetag :vm
 
+    setup context do
+      with :ok <- TestRequirements.check(context) do
+        :ok
+      end
+    end
+
     test "describes a started VM" do
       vm = Firecracker.new() |> Firecracker.start()
       on_exit(fn -> Firecracker.stop(vm) end)
