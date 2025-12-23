@@ -1014,7 +1014,7 @@ defmodule Firecracker do
         {args, config_file}
       end
 
-    p = Px.spawn(binary, args)
+    p = Px.spawn!(binary, args)
 
     case wait_for_process(p, 100) do
       :ok ->
