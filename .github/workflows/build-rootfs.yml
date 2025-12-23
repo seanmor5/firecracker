@@ -1,0 +1,64 @@
+name: Build Rootfs
+
+on:
+  workflow_dispatch:
+    inputs:
+      codename:
+        description: "Ubuntu codename"
+        required: true
+        default: "noble"
+      version:
+        description: "Ubuntu version"
+        required: true
+        default: "24.04"
+      size_mb:
+        description: "Image size in MB"
+        required: true
+        default: "2048"
+
+jobs:
+  build:
+    name: Build Ubuntu ${{ inputs.version }} rootfs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Ubuntu WSL rootfs
+        run: |
+          curl -L -o rootfs.tar.gz \
+            "https://cloud-images.ubuntu.com/wsl/releases/${{ inputs.version }}/current/ubuntu-${{ inputs.codename }}-wsl-amd64-${{ inputs.version }}lts.rootfs.tar.gz"
+
+      - name: Extract rootfs
+        run: |
+          mkdir rootfs
+          tar -xzf rootfs.tar.gz -C rootfs
+
+      - name: Create ext4 image
+        run: |
+          # Create sparse file
+          dd if=/dev/zero of=ubuntu-${{ inputs.version }}.ext4 bs=1M count=0 seek=${{ inputs.size_mb }}
+
+          # Format as ext4
+          mkfs.ext4 -F ubuntu-${{ inputs.version }}.ext4
+
+          # Mount and copy files
+          sudo mkdir -p /mnt/rootfs
+          sudo mount ubuntu-${{ inputs.version }}.ext4 /mnt/rootfs
+          sudo cp -a rootfs/. /mnt/rootfs/
+          sudo umount /mnt/rootfs
+
+      - name: Compress image
+        run: |
+          gzip -9 ubuntu-${{ inputs.version }}.ext4
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: rootfs-ubuntu-${{ inputs.version }}
+          name: Ubuntu ${{ inputs.version }} Rootfs
+          body: |
+            Pre-built Ubuntu ${{ inputs.version }} ext4 rootfs image for Firecracker testing.
+
+            - Size: ${{ inputs.size_mb }}MB (sparse)
+            - Source: Ubuntu WSL cloud image
+          files: ubuntu-${{ inputs.version }}.ext4.gz
+          make_latest: false
