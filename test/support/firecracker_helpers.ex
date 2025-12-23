@@ -74,17 +74,20 @@ defmodule TempFiles do
   end
 end
 
-defmodule TapDevice do
-  @moduledoc """
-  Helpers for working with tap devices in tests.
-  """
+defmodule TestRequirements do
+  @feature_versions %{
+    pmem: "1.14.0"
+  }
 
-  def exists?(name) do
-    File.exists?("/sys/class/net/#{name}")
+  def check(context) do
+    with :ok <- check_tap(context),
+         :ok <- check_feature(context) do
+      :ok
+    end
   end
 
-  def require_tap(%{tap: tap}) when is_binary(tap) do
-    if exists?(tap) do
+  defp check_tap(%{tap: tap}) when is_binary(tap) do
+    if tap_exists?(tap) do
       :ok
     else
       IO.warn(
@@ -95,8 +98,8 @@ defmodule TapDevice do
     end
   end
 
-  def require_tap(%{tap: taps}) when is_list(taps) do
-    missing = Enum.reject(taps, &exists?/1)
+  defp check_tap(%{tap: taps}) when is_list(taps) do
+    missing = Enum.reject(taps, &tap_exists?/1)
 
     if missing == [] do
       :ok
@@ -111,7 +114,89 @@ defmodule TapDevice do
     end
   end
 
-  def require_tap(_context), do: :ok
+  defp check_tap(_context), do: :ok
+
+  defp tap_exists?(name) do
+    File.exists?("/sys/class/net/#{name}")
+  end
+
+  defp check_feature(%{feature: feature}) when is_atom(feature) do
+    if feature_supported?(feature) do
+      :ok
+    else
+      installed = installed_version() || "not found"
+      required = @feature_versions[feature]
+
+      IO.warn(
+        "feature '#{feature}' requires Firecracker >= #{required}, but #{installed} is installed"
+      )
+
+      [skip: true]
+    end
+  end
+
+  defp check_feature(%{feature: features}) when is_list(features) do
+    unsupported = Enum.reject(features, &feature_supported?/1)
+
+    if unsupported == [] do
+      :ok
+    else
+      installed = installed_version() || "not found"
+
+      missing =
+        Enum.map_join(unsupported, ", ", fn f ->
+          "#{f} (>= #{@feature_versions[f]})"
+        end)
+
+      IO.warn("features #{missing} not supported by Firecracker #{installed}")
+      [skip: true]
+    end
+  end
+
+  defp check_feature(_context), do: :ok
+
+  defp feature_supported?(feature) when is_atom(feature) do
+    case installed_version() do
+      nil -> false
+      installed -> Version.compare(installed, min_version(feature)) in [:gt, :eq]
+    end
+  end
+
+  defp min_version(feature) do
+    case Map.fetch(@feature_versions, feature) do
+      {:ok, version} -> Version.parse!(version)
+      :error -> raise "Unknown feature: #{feature}"
+    end
+  end
+
+  def installed_version do
+    case :persistent_term.get({__MODULE__, :version}, :not_cached) do
+      :not_cached ->
+        version = fetch_version()
+        :persistent_term.put({__MODULE__, :version}, version)
+        version
+
+      version ->
+        version
+    end
+  end
+
+  defp fetch_version do
+    case Firecracker.which() do
+      nil ->
+        nil
+
+      path ->
+        {output, 0} = System.cmd(path, ["--version"])
+
+        output
+        |> String.split("\n")
+        |> hd()
+        |> String.trim()
+        |> String.replace_leading("Firecracker v", "")
+        |> Version.parse!()
+    end
+  end
 end
 
 defmodule FirecrackerHelpers do
