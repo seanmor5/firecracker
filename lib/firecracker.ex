@@ -1190,14 +1190,28 @@ defmodule Firecracker do
     raise ArgumentError, "unable to stop VM which is already in state #{inspect(state)}"
   end
 
-  defp cleanup_files!(%Firecracker{config_file: config, api_sock: api_sock, vsock: vsock}) do
-    File.rm_rf!(api_sock)
+  defp cleanup_files!(%Firecracker{} = vm) do
+    %{
+      config_file: config,
+      api_sock: api_sock,
+      vsock: vsock,
+      metrics: metrics,
+      serial: serial
+    } = vm
 
-    if config, do: File.rm_rf!(config), else: :ok
+    if api_sock, do: File.rm_rf!(api_sock)
+    if config, do: File.rm_rf!(config)
 
-    case vsock do
-      %{uds_path: path} when is_binary(path) -> File.rm_rf!(path)
-      _ -> :ok
+    with %{uds_path: path} when is_binary(path) <- vsock do
+      File.rm_rf!(path)
+    end
+
+    with %{metrics_path: path} when is_binary(path) <- metrics do
+      File.rm_rf!(path)
+    end
+
+    with %{output_path: path} when is_binary(path) <- serial do
+      File.rm_rf!(path)
     end
   end
 

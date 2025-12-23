@@ -2892,7 +2892,7 @@ defmodule FirecrackerTest do
              } = vm
     end
 
-    test "verifies socket cleanup on stop after start" do
+    test "socket cleanup on stop after start" do
       vm =
         Firecracker.new()
         |> Firecracker.start()
@@ -2906,8 +2906,7 @@ defmodule FirecrackerTest do
       refute File.exists?(sock_path)
     end
 
-    test "verifies vsock cleanup on stop after start" do
-      # Register path for cleanup in case test fails before stop
+    test "vsock cleanup on stop after start" do
       vsock_path = TempFiles.path("vsock-cleanup", ".sock")
 
       vm =
@@ -2915,15 +2914,64 @@ defmodule FirecrackerTest do
         |> Firecracker.configure(:vsock, guest_cid: 3, uds_path: vsock_path)
         |> Firecracker.start()
 
-      # Both sockets should exist
       assert File.exists?(vm.api_sock)
       assert File.exists?(vsock_path)
 
       Firecracker.stop(vm)
 
-      # Both should be cleaned up
       refute File.exists?(vm.api_sock)
       refute File.exists?(vsock_path)
+    end
+
+    test "metrics file cleanup on stop after start" do
+      metrics_path = TempFiles.mkfifo!("metrics-cleanup")
+
+      vm =
+        Firecracker.new()
+        |> Firecracker.configure(:metrics, metrics_path: metrics_path)
+        |> Firecracker.start()
+
+      assert File.exists?(vm.api_sock)
+      assert File.exists?(metrics_path)
+
+      Firecracker.stop(vm)
+
+      refute File.exists?(vm.api_sock)
+      refute File.exists?(metrics_path)
+    end
+
+    test "serial output cleanup on stop after start" do
+      serial_path = TempFiles.touch!("serial-cleanup", ".log")
+
+      vm =
+        Firecracker.new()
+        |> Firecracker.configure(:serial, output_path: serial_path)
+        |> Firecracker.start()
+
+      assert File.exists?(vm.api_sock)
+      assert File.exists?(serial_path)
+
+      Firecracker.stop(vm)
+
+      refute File.exists?(vm.api_sock)
+      refute File.exists?(serial_path)
+    end
+
+    test "preserves log files on stop" do
+      log_path = TempFiles.touch!("log-preserve", ".log")
+
+      vm =
+        Firecracker.new()
+        |> Firecracker.configure(:logger, log_path: log_path, level: "Info")
+        |> Firecracker.start()
+
+      assert File.exists?(vm.api_sock)
+      assert File.exists?(log_path)
+
+      Firecracker.stop(vm)
+
+      refute File.exists?(vm.api_sock)
+      assert File.exists?(log_path)
     end
   end
 
