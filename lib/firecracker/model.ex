@@ -61,7 +61,6 @@ defimpl Firecracker.Model, for: Any do
 
         @post_boot_keys unquote(Macro.escape(post_boot_schema)).schema
                         |> Keyword.keys()
-                        |> MapSet.new()
 
         def patch(struct) do
           struct
