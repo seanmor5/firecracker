@@ -1014,7 +1014,7 @@ defmodule Firecracker do
         {args, config_file}
       end
 
-    p = Px.spawn(binary, args)
+    p = Px.spawn!(binary, args)
 
     case wait_for_process(p, 100) do
       :ok ->
@@ -1041,14 +1041,15 @@ defmodule Firecracker do
       {:error, reason} ->
         if Px.alive?(p) do
           p
-          |> Px.signal(:sigterm)
+          |> Px.signal!(:sigterm)
           |> Px.wait()
         end
 
-        if config_file, do: File.rm_rf!(config_file)
-        if sock, do: File.rm_rf!(sock)
+        if config_file, do: File.rm_rf(config_file)
+        if sock, do: File.rm_rf(sock)
 
-        raise "Failed to start Firecracker: #{inspect(reason)}"
+        command = Enum.join([binary | args], " ")
+        raise "Failed to start Firecracker: #{inspect(reason)}\n\nCommand: #{command}"
     end
   end
 
@@ -1179,8 +1180,13 @@ defmodule Firecracker do
   @spec stop(t()) :: t()
   def stop(%Firecracker{process: %Px{} = p, state: state} = vm)
       when state in [:started, :running, :paused] do
-    p = Px.wait(Px.signal(p, :sigterm))
-    cleanup_files!(vm)
+    p =
+      case Px.signal(p, :sigterm) do
+        {:ok, signaled} -> Px.wait(signaled)
+        {:error, :already_exited} -> p
+      end
+
+    cleanup_files(vm)
     %{vm | process: p, state: :exited}
   end
 
@@ -1190,14 +1196,28 @@ defmodule Firecracker do
     raise ArgumentError, "unable to stop VM which is already in state #{inspect(state)}"
   end
 
-  defp cleanup_files!(%Firecracker{config_file: config, api_sock: api_sock, vsock: vsock}) do
-    File.rm_rf!(api_sock)
+  defp cleanup_files(%Firecracker{} = vm) do
+    %{
+      config_file: config,
+      api_sock: api_sock,
+      vsock: vsock,
+      metrics: metrics,
+      serial: serial
+    } = vm
 
-    if config, do: File.rm_rf!(config), else: :ok
+    if api_sock, do: File.rm_rf(api_sock)
+    if config, do: File.rm_rf(config)
 
-    case vsock do
-      %{uds_path: path} when is_binary(path) -> File.rm_rf!(path)
-      _ -> :ok
+    with %{uds_path: path} when is_binary(path) <- vsock do
+      File.rm_rf(path)
+    end
+
+    with %{metrics_path: path} when is_binary(path) <- metrics do
+      File.rm_rf(path)
+    end
+
+    with %{output_path: path} when is_binary(path) <- serial do
+      File.rm_rf(path)
     end
   end
 
@@ -1821,7 +1841,6 @@ defmodule Firecracker do
     |> Enum.flat_map(&Tuple.to_list/1)
   end
 
-  defp option(val) when is_function(val), do: val.()
   defp option(val) when is_integer(val), do: "#{val}"
   defp option(val) when is_atom(val), do: Atom.to_string(val)
   defp option(val) when is_binary(val), do: val

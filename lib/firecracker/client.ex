@@ -31,23 +31,35 @@ defmodule Firecracker.Client do
     |> parse_resp(204)
   end
 
-  # We have to do this unfortunate hack because the balloon device
-  # has 2 patch endpoints
   @spec patch(Request.t(), struct()) :: result()
-  def patch(req, %Firecracker.Balloon{stats_polling_interval_s: interval} = balloon)
-      when not is_nil(interval) do
-    stats_req = %{stats_polling_interval_s: interval}
-
-    stats_resp =
+  def patch(
+        req,
+        %Firecracker.Balloon{stats_polling_interval_s: interval, amount_mib: amount} = balloon
+      )
+      when not is_nil(interval) and not is_nil(amount) do
+    resp =
       req
-      |> Req.put!(url: "/balloon/statistics", json: stats_req)
+      |> Req.put!(url: "/balloon/statistics", json: Model.patch(balloon))
       |> parse_resp(204)
 
-    with {:ok, _} <- stats_resp do
+    with {:ok, _} <- resp do
       req
       |> Req.put!(url: Model.endpoint(balloon), json: Model.patch(balloon))
       |> parse_resp(204)
     end
+  end
+
+  def patch(req, %Firecracker.Balloon{stats_polling_interval_s: interval} = balloon)
+      when not is_nil(interval) do
+    req
+    |> Req.put!(url: "/balloon/statistics", json: Model.patch(balloon))
+    |> parse_resp(204)
+  end
+
+  def patch(req, %Firecracker.Balloon{amount_mib: amount} = balloon) when not is_nil(amount) do
+    req
+    |> Req.put!(url: Model.endpoint(balloon), json: Model.patch(balloon))
+    |> parse_resp(204)
   end
 
   def patch(req, model) do
