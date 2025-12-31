@@ -59,7 +59,9 @@ defimpl Firecracker.Model, for: Any do
           |> to_api_config()
         end
 
-        @post_boot_keys unquote(Macro.escape(post_boot_schema)).schema |> Keyword.keys() |> MapSet.new()
+        @post_boot_keys unquote(Macro.escape(post_boot_schema)).schema
+                        |> Keyword.keys()
+                        |> MapSet.new()
 
         def patch(struct) do
           struct
