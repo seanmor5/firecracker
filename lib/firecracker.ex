@@ -56,6 +56,7 @@ defmodule Firecracker do
     * `Firecracker.Entropy`
     * `Firecracker.Logger`
     * `Firecracker.MachineConfig`
+    * `Firecracker.MemoryHotplug`
     * `Firecracker.MmdsConfig`
     * `Firecracker.NetworkInterface`
     * `Firecracker.Pmem`
@@ -471,6 +472,7 @@ defmodule Firecracker do
     drives: %{},
     logger: nil,
     machine_config: nil,
+    memory_hotplug: nil,
     metrics: nil,
     mmds_config: nil,
     network_interfaces: %{},
@@ -496,12 +498,20 @@ defmodule Firecracker do
           | :entropy
           | :logger
           | :machine_config
+          | :memory_hotplug
           | :metrics
           | :mmds_config
           | :serial
           | :vsock
   @type addable :: :drive | :network_interface | :pmem
-  @type describable :: :balloon | :balloon_statistics | :machine_config | :mmds | :vm_config
+  @type describable ::
+          :balloon
+          | :balloon_statistics
+          | :balloon_hinting_status
+          | :machine_config
+          | :memory_hotplug
+          | :mmds
+          | :vm_config
 
   @type t :: %__MODULE__{
           api_sock: String.t() | nil,
@@ -515,6 +525,7 @@ defmodule Firecracker do
           drives: %{String.t() => Firecracker.Drive.t()},
           logger: Firecracker.Logger.t() | nil,
           machine_config: Firecracker.MachineConfig.t() | nil,
+          memory_hotplug: Firecracker.MemoryHotplug.t() | nil,
           metrics: Firecracker.Metrics.t() | nil,
           mmds_config: Firecracker.MmdsConfig.t() | nil,
           network_interfaces: %{String.t() => Firecracker.NetworkInterface.t()},
@@ -610,6 +621,7 @@ defmodule Firecracker do
     :entropy,
     :logger,
     :machine_config,
+    :memory_hotplug,
     :metrics,
     :mmds_config,
     :serial,
@@ -627,6 +639,7 @@ defmodule Firecracker do
       * `:entropy`
       * `:logger`
       * `:machine_config`
+      * `:memory_hotplug`
       * `:metrics`
       * `:mmds_config`
       * `:serial`
@@ -1300,6 +1313,109 @@ defmodule Firecracker do
     raise ArgumentError, "unable to flush metrics for VM in state #{inspect(state)}"
   end
 
+  ## Balloon Hinting
+
+  @doc """
+  Starts free page hinting on the balloon device.
+
+  Free page hinting allows the guest to communicate which memory pages are
+  free to the hypervisor, enabling more efficient memory management.
+
+  The VM must be in a `:running` state and have a balloon device configured.
+
+  ## Example
+
+      vm = Firecracker.start_hinting(vm)
+
+  Use `Firecracker.describe(vm, :balloon_hinting_status)` to check the status,
+  and `Firecracker.stop_hinting/1` to end the hinting run.
+  """
+  @doc type: :lifecycle
+  @spec start_hinting(t()) :: t()
+  def start_hinting(%Firecracker{req: req, state: :running} = vm) do
+    with {:ok, _} <- Client.start_balloon_hinting(req) do
+      vm
+    end
+  end
+
+  def start_hinting(%Firecracker{state: state}) do
+    raise ArgumentError, "unable to start hinting for VM in state #{inspect(state)}"
+  end
+
+  @doc """
+  Stops an active free page hinting run.
+
+  The VM must be in a `:running` state.
+
+  ## Example
+
+      vm = Firecracker.stop_hinting(vm)
+  """
+  @doc type: :lifecycle
+  @spec stop_hinting(t()) :: t()
+  def stop_hinting(%Firecracker{req: req, state: :running} = vm) do
+    with {:ok, _} <- Client.stop_balloon_hinting(req) do
+      vm
+    end
+  end
+
+  def stop_hinting(%Firecracker{state: state}) do
+    raise ArgumentError, "unable to stop hinting for VM in state #{inspect(state)}"
+  end
+
+  @doc """
+  Returns the current balloon hinting status.
+
+  This is a convenience wrapper around `describe(vm, :balloon_hinting_status)`
+  that returns a `Firecracker.BalloonHinting` struct.
+
+  ## Example
+
+      status = Firecracker.hinting_status(vm)
+      # => %Firecracker.BalloonHinting{state: :in_progress, hinting_count: 42}
+  """
+  @doc type: :inspection
+  @spec hinting_status(t()) :: Firecracker.BalloonHinting.t()
+  def hinting_status(%Firecracker{req: req, state: state} = _vm)
+      when state in [:started, :running, :paused] do
+    with {:ok, response} <- Client.describe(req, :balloon_hinting_status) do
+      Firecracker.BalloonHinting.from_response(response)
+    end
+  end
+
+  def hinting_status(%Firecracker{state: state}) do
+    raise ArgumentError, "unable to get hinting status for VM in state #{inspect(state)}"
+  end
+
+  ## MMDS Updates
+
+  @doc """
+  Updates the MMDS data store with a partial update.
+
+  Unlike `metadata/2` which replaces the entire metadata store, this function
+  performs a partial update (PATCH) that merges the provided data with existing
+  metadata.
+
+  The VM must be in a `:started`, `:running`, or `:paused` state.
+
+  ## Example
+
+      # Add or update specific keys without affecting others
+      vm = Firecracker.update_metadata(vm, %{"new_key" => "value"})
+  """
+  @doc type: :configuration
+  @spec update_metadata(t(), map()) :: t()
+  def update_metadata(%Firecracker{req: req, state: state} = vm, data)
+      when state in [:started, :running, :paused] and is_map(data) do
+    with {:ok, _} <- Client.patch_mmds(req, data) do
+      vm
+    end
+  end
+
+  def update_metadata(%Firecracker{state: state}, _data) do
+    raise ArgumentError, "unable to update metadata for VM in state #{inspect(state)}"
+  end
+
   ## Snapshots
 
   @doc """
@@ -1497,7 +1613,9 @@ defmodule Firecracker do
   @describables [
     :balloon,
     :balloon_statistics,
+    :balloon_hinting_status,
     :machine_config,
+    :memory_hotplug,
     :mmds,
     :vm_config
   ]
@@ -1513,7 +1631,9 @@ defmodule Firecracker do
 
     * `:balloon` - returns information about the balloon device configuration
     * `:balloon_statistics` - returns information about balloon device statistics
+    * `:balloon_hinting_status` - returns information about balloon hinting status
     * `:machine_config` - returns information about the machine configuration
+    * `:memory_hotplug` - returns information about memory hotplug configuration
     * `:mmds` - returns information about the mmds data content
     * `:vm_config` - returns information about the full vm configuration
   """

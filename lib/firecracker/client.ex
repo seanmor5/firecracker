@@ -11,7 +11,9 @@ defmodule Firecracker.Client do
     instance: "/",
     balloon: "/balloon",
     balloon_statistics: "/balloon/statistics",
+    balloon_hinting_status: "/balloon/hinting/status",
     machine_config: "/machine-config",
+    memory_hotplug: "/hotplug/memory",
     mmds: "/mmds",
     vm_config: "/vm/config",
     version: "/version"
@@ -93,6 +95,31 @@ defmodule Firecracker.Client do
   def patch_vm(%Request{} = req, attrs \\ %{}) do
     req
     |> Req.patch!(url: "/vm", json: attrs)
+    |> parse_resp(204)
+  end
+
+  ## Balloon Hinting
+
+  @spec start_balloon_hinting(Request.t()) :: result()
+  def start_balloon_hinting(%Request{} = req) do
+    req
+    |> Req.patch!(url: "/balloon/hinting/start", json: %{})
+    |> parse_resp(204)
+  end
+
+  @spec stop_balloon_hinting(Request.t()) :: result()
+  def stop_balloon_hinting(%Request{} = req) do
+    req
+    |> Req.patch!(url: "/balloon/hinting/stop", json: %{})
+    |> parse_resp(204)
+  end
+
+  ## MMDS
+
+  @spec patch_mmds(Request.t(), map()) :: result()
+  def patch_mmds(%Request{} = req, data) do
+    req
+    |> Req.patch!(url: "/mmds", json: data)
     |> parse_resp(204)
   end
 
