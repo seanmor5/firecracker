@@ -16,7 +16,10 @@ defmodule Firecracker.NetworkInterface do
 
   ## Post-boot Behavior
 
-  Only `:iface_id` can be modified after VM starts
+  The following fields can be modified after VM starts:
+    * `:iface_id` - Required to identify which interface to modify
+    * `:rx_rate_limiter` - Rate limiter for incoming traffic
+    * `:tx_rate_limiter` - Rate limiter for outgoing traffic
 
   ## Notes
 
@@ -35,7 +38,11 @@ defmodule Firecracker.NetworkInterface do
                      tx_rate_limiter: [type: :any, required: false]
                    )
 
-  @post_boot_schema NimbleOptions.new!(iface_id: [type: :string, required: false])
+  @post_boot_schema NimbleOptions.new!(
+                      iface_id: [type: :string, required: true],
+                      rx_rate_limiter: [type: :any, required: false],
+                      tx_rate_limiter: [type: :any, required: false]
+                    )
 
   @derive {Firecracker.Model,
            pre_boot_schema: @pre_boot_schema,

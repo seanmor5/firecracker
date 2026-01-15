@@ -1333,8 +1333,8 @@ defmodule Firecracker do
       ])
 
     mem_file_path = opts[:mem_file_path] || raise ArgumentError, "mem_file_path is required"
-    snapshot_path = opts[:path] || raise ArgumentError, "snapshot_path is required"
-    snapshot_type = opts[:type]
+    snapshot_path = opts[:snapshot_path] || raise ArgumentError, "snapshot_path is required"
+    snapshot_type = opts[:snapshot_type]
 
     attrs = %{
       mem_file_path: mem_file_path,
