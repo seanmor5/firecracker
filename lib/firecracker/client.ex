@@ -49,7 +49,7 @@ defmodule Firecracker.Client do
     end
   end
 
-  def patch(req, %Firecracker.Balloon{stats_polling_interval_s: interval} = balloon)
+  def patch(req, %Firecracker.Balloon{stats_polling_interval_s: interval})
       when not is_nil(interval) do
     req
     |> Req.patch!(url: "/balloon/statistics", json: %{"stats_polling_interval_s" => interval})
