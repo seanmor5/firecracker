@@ -483,6 +483,10 @@ defmodule Firecracker do
     serial: nil,
     # tracing
     tracing: nil,
+    # version compatibility
+    target_version: nil,
+    detected_version: nil,
+    version_enforcement: :none,
     # lifecycle
     state: :initial,
     req: nil,
@@ -534,6 +538,9 @@ defmodule Firecracker do
           mmds: Firecracker.Mmds.t() | nil,
           entropy: Firecracker.Entropy.t() | nil,
           serial: Firecracker.Serial.t() | nil,
+          target_version: Firecracker.Version.t() | nil,
+          detected_version: Firecracker.Version.t() | nil,
+          version_enforcement: Firecracker.Version.enforcement_mode(),
           state: vm_state(),
           req: Req.Request.t() | nil,
           process: term() | nil
@@ -602,16 +609,57 @@ defmodule Firecracker do
 
     * `:start_time_us` - Process start time (wall clock, microseconds). This parameter
       is optional.
+
+  ## Version Compatibility Options
+
+    * `:target_version` - The target Firecracker version string (e.g., "1.10.0").
+      When set, the SDK will validate that features are compatible with this version.
+
+    * `:version_enforcement` - How to handle version incompatibilities. Can be:
+      * `:none` - No version checking (default)
+      * `:warn` - Log a warning for incompatible features but continue
+      * `:strict` - Raise an error for incompatible features
+
+  ## Examples
+
+      # Basic VM without version checking
+      Firecracker.new()
+
+      # VM targeting a specific Firecracker version with strict enforcement
+      Firecracker.new(
+        target_version: "1.10.0",
+        version_enforcement: :strict
+      )
+
+      # VM with warning-only version checking
+      Firecracker.new(
+        target_version: "1.5.0",
+        version_enforcement: :warn
+      )
   """
   @doc type: :creation
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
+    {version_opts, opts} = Keyword.split(opts, [:target_version, :version_enforcement])
+
     opts =
       opts
       |> Keyword.update(:id, default_id(), & &1)
       |> Keyword.update(:api_sock, default_api_sock(), & &1)
 
-    Firecracker.set_options(%Firecracker{}, opts)
+    vm = Firecracker.set_options(%Firecracker{}, opts)
+
+    # Apply version configuration
+    target_version =
+      case Keyword.get(version_opts, :target_version) do
+        nil -> nil
+        v when is_binary(v) -> Firecracker.Version.parse!(v)
+        %Firecracker.Version{} = v -> v
+      end
+
+    enforcement = Keyword.get(version_opts, :version_enforcement, :none)
+
+    %{vm | target_version: target_version, version_enforcement: enforcement}
   end
 
   @configurables [
@@ -654,8 +702,11 @@ defmodule Firecracker do
   """
   @doc type: :configuration
   @spec configure(t(), configurable(), keyword()) :: t()
-  def configure(%Firecracker{state: state} = vm, configurable, config)
+  def configure(%Firecracker{state: state, target_version: version, version_enforcement: enforcement} = vm, configurable, config)
       when configurable in @configurables do
+    # Check version compatibility
+    Firecracker.Version.enforce_feature(version, configurable, enforcement)
+
     module = Module.concat(Firecracker, Macro.camelize(Atom.to_string(configurable)))
     model = struct(module, %{})
     Firecracker.Model.validate_change!(model, config, state)
@@ -706,7 +757,10 @@ defmodule Firecracker do
   """
   @doc type: :configuration
   @spec add(t(), addable(), String.t(), keyword()) :: t()
-  def add(%Firecracker{state: state} = vm, addable, id, config) when addable in @addables do
+  def add(%Firecracker{state: state, target_version: version, version_enforcement: enforcement} = vm, addable, id, config) when addable in @addables do
+    # Check version compatibility
+    Firecracker.Version.enforce_feature(version, addable, enforcement)
+
     module_name = Module.concat(Firecracker, Macro.camelize(Atom.to_string(addable)))
     model = struct(module_name, %{})
     id_key = @id_keys[addable]
@@ -1649,6 +1703,93 @@ defmodule Firecracker do
   def describe(%Firecracker{state: state}, key) do
     raise ArgumentError,
           "unable to describe #{inspect(key)} for VM which is in state #{inspect(state)}"
+  end
+
+  ## Version Management
+
+  @doc """
+  Detects the running Firecracker version by querying the API.
+
+  The VM must be in a `:started`, `:running`, or `:paused` state.
+  This function queries the `/version` endpoint and stores the result
+  in the VM struct.
+
+  ## Example
+
+      vm = Firecracker.detect_version(vm)
+      vm.detected_version
+      # => %Firecracker.Version{major: 1, minor: 10, patch: 0}
+
+  ## Returns
+
+  Returns the VM struct with the `:detected_version` field populated.
+  """
+  @doc type: :inspection
+  @spec detect_version(t()) :: t()
+  def detect_version(%Firecracker{req: req, state: state} = vm)
+      when state in [:started, :running, :paused] do
+    with {:ok, %{"firecracker_version" => version_string}} <- Client.describe(req, :version),
+         {:ok, version} <- Firecracker.Version.parse(version_string) do
+      %{vm | detected_version: version}
+    else
+      _ -> vm
+    end
+  end
+
+  def detect_version(%Firecracker{state: state}) do
+    raise ArgumentError,
+          "unable to detect version for VM which is in state #{inspect(state)}"
+  end
+
+  @doc """
+  Returns the effective version for compatibility checking.
+
+  Returns the detected version if available, otherwise the target version.
+  Returns `nil` if neither is set.
+  """
+  @doc type: :helper
+  @spec effective_version(t()) :: Firecracker.Version.t() | nil
+  def effective_version(%Firecracker{detected_version: v}) when not is_nil(v), do: v
+  def effective_version(%Firecracker{target_version: v}), do: v
+
+  @doc """
+  Checks if a feature is supported by the VM's target/detected version.
+
+  Returns `true` if no version is configured (assumes latest).
+
+  ## Example
+
+      vm = Firecracker.new(target_version: "1.10.0")
+      Firecracker.supports?(vm, :balloon)      # => true
+      Firecracker.supports?(vm, :memory_hotplug)  # => false (requires 1.14+)
+  """
+  @doc type: :helper
+  @spec supports?(t(), atom()) :: boolean()
+  def supports?(%Firecracker{} = vm, feature) do
+    case effective_version(vm) do
+      nil -> true
+      version -> Firecracker.Version.supports?(version, feature)
+    end
+  end
+
+  @doc """
+  Returns a list of features not supported by the VM's configured version.
+
+  Useful for debugging version compatibility issues.
+
+  ## Example
+
+      vm = Firecracker.new(target_version: "1.10.0")
+      Firecracker.unsupported_features(vm)
+      # => [:serial, :pmem, :memory_hotplug, :balloon_hinting]
+  """
+  @doc type: :helper
+  @spec unsupported_features(t()) :: [atom()]
+  def unsupported_features(%Firecracker{} = vm) do
+    case effective_version(vm) do
+      nil -> []
+      version -> Firecracker.Version.unavailable_features(version)
+    end
   end
 
   ## Jailer
